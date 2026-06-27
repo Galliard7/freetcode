@@ -13,6 +13,22 @@ Auto-captured by the chronicle skill. Reverse-chronological.
 
 ---
 
+## 2026-06-27 — The KV Migration: Curriculum Behind the Worker
+
+`#milestone` `#decision`
+
+Same day, "screw it, just go for it" — so we executed the full KV migration instead of deferring it. The shape (decided earlier): move the 273 problems out of the static `problems.json` and serve them per-problem from Cloudflare KV behind the existing Worker, so the full curriculum is never one download. The load-bearing invariant is the split: a **lightweight `/problems/index`** (num/title/difficulty/category/tags/lists/visualizer — **40 KB**, titles only) builds the sidebar, and **`/problem/:num`** returns the full body (template/solution/hints/description/judge/alt_solutions) on demand. The valuable 718 KB now requires 273 separate fetches to scrape instead of a single file grab — exactly the hurdle, paired with AGPL. We reused the `freetcode-stats` Worker (added a `PROBLEMS` KV namespace + two cached endpoints and a `kvDoc` helper) rather than standing up a new service, and wrote `backend/sync-problems.mjs` so re-pushing the curriculum after edits is one command (`wrangler kv bulk put`). KV, not D1 — content reads never touch the stats database.
+
+The frontend refactor was the delicate part: `problems` went from holding 273 full objects to holding the lightweight index, and `selectProblem` became async — it detects a body-less item and lazy-fetches `/problem/:num`, merging body over metadata, with an in-memory + `localStorage` cache and graceful fallback (network → cache → embedded starters). Before grepping I worried about every consumer of `.solution`/`.template`/`.hints`/`.judge`, but the audit was clean: **every** full-field access already went through `currentProblem` or the merged `p` inside `selectProblem` — nothing read bodies off the raw array — so the change stayed small. I gated the cutover on a real test: a throwaway Playwright smoke test (self-hosted static server → live Worker) that confirmed 273 items render, the boot problem and Two Sum bodies fetch, the description populates, and **zero** app console errors. Only then did I cut over.
+
+Two things worth remembering. First, the cutover grep caught a stray `fetch('problems.json')` in **`dashboard.html`** (it built a num→title map) — would've 404'd the dashboard post-removal; repointed it at `/problems/index`. Second, the "remove from history" nuance: `problems.json` isn't deleted, it's **kept locally and gitignored** — it's still the source the sync script reads — but excluded from the repo and purged from history by re-initialising git (clean single commit) and force-pushing. Verified after: `problems.json` returns 404 on GitHub and is absent from a recursive tree scan; a pre-rewrite `git bundle` backup sits in `~`. Net: the curriculum lives in KV + locally, the public repo ships only the engine, and the app pulls content at runtime.
+
+---
+**Decisions:** Execute KV migration now (not deferred); per-problem serving with a titles-only index as the invariant; reuse `freetcode-stats` Worker + new `PROBLEMS` KV (not D1); keep `problems.json` local+gitignored (source for sync) rather than delete; gate cutover on a Playwright smoke test; clean-history rewrite + force-push to purge it.
+**Progress:** `PROBLEMS` KV created + 274 entries synced; Worker `/problems/index` + `/problem/:num` deployed & tested (incl. negative nums, 400/404); frontend lazy-loads + caches; `dashboard.html` repointed; smoke test green; `problems.json` removed from repo + history (verified 404 on GitHub); chronicle updated.
+**Blocked:** Arrows system diagram still to draw (next step); D1 internal name still `opencode-stats` (empty, invisible — optional cleanup).
+**Content-worthy?:** Yes — "How I made my open-source LeetCode harder to fork without paying for hosting: serve the curriculum per-problem from Cloudflare KV (free tier), keep titles-only in the index, and gate the cutover on a headless smoke test."
+
 ## 2026-06-27 — Hardening the Release: AGPL, a Name Collision, and a Clean-Slate Repo
 
 `#decision` `#pivot` `#milestone`
