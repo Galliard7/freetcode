@@ -1,0 +1,30 @@
+node_modules/
+tests/
+package.json
+package-lock.json
+
+# OS / editor junk
+.DS_Store
+**/.DS_Store
+
+# Cloudflare Worker local state + secrets (never commit)
+backend/.wrangler/
+**/.wrangler/
+.dev.vars
+**/.dev.vars
+
+# qa-swarm run artifacts (KB stays tracked)
+qa-reports/*/
+!qa-reports/QA-KNOWLEDGE.md
+
+# Marketing pre-production packages (local only, never committed/deployed)
+/productvid/
+/teaser/
+
+# Curriculum source — lives only locally; synced into Cloudflare KV via
+# backend/sync-problems.mjs. NEVER commit (keeps the full set out of the repo).
+problems.json
+
+# Temporary scratch (handoffs, one-off tests)
+HANDOFF-*.md
+_kvtest.mjs

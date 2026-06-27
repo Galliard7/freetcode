@@ -1,0 +1,87 @@
+/* ═══════════════════════════════════════════════════════════════════
+   FreetCode — AI Tutor (client-side WebLLM + WebGPU).
+   Isolated & theme-driven (uses style.css/themes.css variables, so it
+   respects all skins). To fully revert the feature: delete tutor.js +
+   tutor.css and the #tutor-* markup / bridge in index.html.
+   ═══════════════════════════════════════════════════════════════════ */
+.tutor-panel {
+  position: fixed; top: 0; right: 0; height: 100vh; width: 374px; max-width: 92vw;
+  background: var(--bg-panel, #0c0f14); border-left: 1px solid var(--border-strong);
+  display: flex; flex-direction: column; z-index: 60;
+  transform: translateX(102%); transition: transform .22s ease;
+  font-family: var(--font-ui);
+}
+.tutor-panel.open { transform: none; box-shadow: -12px 0 40px rgba(0,0,0,.35); }
+.tutor-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+}
+.tutor-title { font-weight: 600; color: var(--fg-strong); font-size: 14px; }
+.tutor-badge {
+  font-size: 10px; color: var(--accent); border: 1px solid var(--accent-soft);
+  padding: 1px 6px; border-radius: 99px; margin-left: 6px; vertical-align: 1px;
+}
+.tutor-muted { color: var(--fg-muted); font-size: 12px; line-height: 1.5; }
+
+/* ── state machine: gate · loading · ready ── */
+.tutor-gate, .tutor-loading, .tutor-ready { display: none; }
+.tutor-panel[data-state="gate"]    .tutor-gate    { display: block; padding: 18px 16px; overflow: auto; }
+.tutor-panel[data-state="loading"] .tutor-loading { display: block; padding: 22px 16px; }
+.tutor-panel[data-state="ready"]   .tutor-ready   { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.tutor-gate-title { font-size: 15px; font-weight: 600; color: var(--fg-strong); margin: 0 0 6px; }
+.tutor-gate-list {
+  margin: 12px 0; padding-left: 18px; color: var(--fg-secondary);
+  font-size: 12.5px; line-height: 1.7;
+}
+.tutor-gate .btn-primary { width: 100%; margin-top: 8px; }
+#tutor-gate-err { color: var(--hard, #fb7185); margin-top: 8px; }
+
+.tutor-bar {
+  height: 8px; background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: 99px; overflow: hidden; margin-top: 12px;
+}
+.tutor-bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+.tutor-quick {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.tutor-quick button {
+  background: var(--bg-input); color: var(--fg-secondary);
+  border: 1px solid var(--border); border-radius: 99px; padding: 4px 10px;
+  font-size: 11.5px; cursor: pointer; font-family: inherit;
+}
+.tutor-quick button:hover { border-color: var(--accent); color: var(--fg-primary); }
+
+.tutor-messages {
+  flex: 1; overflow: auto; padding: 14px 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.tutor-msg {
+  font-size: 13px; line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+  padding: 9px 11px; border-radius: 10px; max-width: 92%;
+}
+.tutor-msg.user { align-self: flex-end; background: var(--accent-soft); color: var(--fg-strong); }
+.tutor-msg.ai   { align-self: flex-start; background: var(--bg-input); color: var(--fg-primary); border: 1px solid var(--border); }
+
+.tutor-input-area { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
+.tutor-input {
+  flex: 1; resize: none; background: var(--bg-input); color: var(--fg-primary);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  font: inherit; font-size: 13px; max-height: 120px;
+}
+.tutor-input-area .btn-primary { align-self: flex-end; }
+
+.tutor-head-actions { display: flex; gap: 4px; }
+
+/* settings panel row */
+.tutor-settings { margin: 4px 0 14px; }
+.tutor-settings .tutor-status { font-size: 12.5px; color: var(--fg-secondary); margin: 6px 0 10px; }
+/* grayed-out when there's no model to remove */
+#tutor-remove:disabled {
+  opacity: .45; color: var(--fg-muted); border-color: var(--border);
+  cursor: not-allowed; pointer-events: none;
+}
+
+@media (max-width: 560px) { .tutor-panel { width: 100vw; } }
