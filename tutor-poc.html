@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreetCode Tutor — POC</title>
+<!--
+  STAGE 0 POC — standalone feeler for the client-side tutor.
+  Does NOT touch the live FreetCode app. Throwaway by design.
+  Goal: feel first-load time, latency, and hint quality of a tiny model,
+  and prove the consent / cache-reuse / remove lifecycle.
+
+  HOW TO RUN (WebGPU needs a secure context — use localhost, not file://):
+    cd /Users/galliard7/projects/freetcode
+    python3 -m http.server 8000
+    open http://localhost:8000/tutor-poc.html   (Chrome/Edge, or Safari 17+)
+-->
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --line:#334155; --ink:#e2e8f0; --mut:#94a3b8;
+          --accent:#f08c00; --blue:#4a9eed; --green:#2b8a3e; --red:#e03131; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:ui-monospace,SFMono-Regular,Menlo,monospace; line-height:1.5; }
+  .wrap { max-width:860px; margin:0 auto; padding:24px 20px 60px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--mut); font-size:13px; margin-bottom:20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+          padding:16px; margin-bottom:16px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  label { font-size:12px; color:var(--mut); display:block; margin-bottom:4px; }
+  select, textarea, input { width:100%; background:var(--bg); color:var(--ink);
+          border:1px solid var(--line); border-radius:6px; padding:8px; font:inherit; font-size:13px; }
+  textarea { resize:vertical; }
+  button { background:var(--accent); color:#1a1205; border:none; border-radius:6px;
+           padding:8px 14px; font:inherit; font-weight:600; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  button.danger { background:transparent; color:var(--red); border:1px solid var(--red); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .pill { font-size:11px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--mut); }
+  .pill.on { color:var(--green); border-color:var(--green); }
+  .pill.off { color:var(--mut); }
+  .bar { height:8px; background:var(--bg); border:1px solid var(--line); border-radius:99px; overflow:hidden; margin-top:8px; }
+  .bar > i { display:block; height:100%; width:0; background:var(--blue); transition:width .2s; }
+  .muted { color:var(--mut); font-size:12px; }
+  .qa { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+  .qa button { background:var(--bg); color:var(--ink); border:1px solid var(--line); font-weight:400; font-size:12px; }
+  #out { white-space:pre-wrap; min-height:80px; background:var(--bg); border:1px solid var(--line);
+         border-radius:6px; padding:12px; font-size:13px; }
+  .stat { color:var(--mut); font-size:12px; margin-top:6px; }
+  .hidden { display:none !important; }
+  .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; }
+  .modal { background:var(--panel); border:1px solid var(--blue); border-radius:12px; padding:24px; max-width:460px; }
+  .modal h2 { font-size:16px; margin:0 0 10px; }
+  .modal ul { margin:10px 0; padding-left:18px; font-size:13px; color:var(--mut); }
+  .modal .row { justify-content:flex-end; margin-top:16px; }
+  a { color:var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FreetCode Tutor — POC <span class="pill" id="gpu-pill">checking GPU…</span></h1>
+  <div class="sub">Stage 0 feeler. Standalone — does not touch the live app. Tests the tiny model + the consent / cache lifecycle.</div>
+
+  <!-- STATE A: not enabled -->
+  <div class="card" id="gate">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <strong>AI Tutor</strong> <span class="pill off" id="status-pill">off</span>
+        <div class="muted" id="cache-line">Checking whether a model is already on this device…</div>
+      </div>
+      <button id="enable-btn">Enable Tutor</button>
+    </div>
+  </div>
+
+  <!-- STATE B: loading -->
+  <div class="card hidden" id="loading">
+    <div class="muted" id="load-text">Preparing…</div>
+    <div class="bar"><i id="load-bar"></i></div>
+  </div>
+
+  <!-- STATE C: ready -->
+  <div class="hidden" id="ready">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <div><strong>Tutor ready</strong> <span class="pill on">on-device</span>
+          <div class="muted" id="ready-line"></div></div>
+        <button class="danger" id="remove-btn">Remove model (free disk)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <label>System prompt (the tutor's behavior — editable)</label>
+      <textarea id="sys" rows="6"></textarea>
+    </div>
+
+    <div class="card">
+      <label>Grounding context — what FreetCode would inject (problem + the user's code + verdict)</label>
+      <textarea id="ctx" rows="9"></textarea>
+    </div>
+
+    <div class="card">
+      <label>Ask the tutor</label>
+      <div class="qa">
+        <button data-q="Give me a hint — don't reveal the solution.">Hint</button>
+        <button data-q="Explain what's going wrong with my code.">Explain</button>
+        <button data-q="Review my code.">Review</button>
+        <button data-q="What's the time and space complexity, relative to optimal?">Complexity</button>
+      </div>
+      <textarea id="q" rows="2" placeholder="Type a question, or use a button above…"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button id="send-btn">Ask</button>
+        <button class="ghost" id="stop-btn" disabled>Stop</button>
+        <span class="muted">model:</span><span class="muted" id="active-model"></span>
+      </div>
+      <div style="margin-top:12px"><label>Response</label><div id="out"></div>
+        <div class="stat" id="stat"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="muted">No WebGPU? You'll see a notice above — the tutor needs Chrome/Edge or Safari 17+. Everything runs on your device; nothing is sent to a server.</div>
+</div>
+
+<!-- consent modal -->
+<div class="modal-bg hidden" id="consent">
+  <div class="modal">
+    <h2>Enable the AI Tutor?</h2>
+    <p class="muted">It runs entirely in your browser — private, free, nothing sent to any server.</p>
+    <ul>
+      <li>One-time <strong>download (~1&nbsp;GB)</strong>, then cached on this device</li>
+      <li>Reused automatically on future visits — no re-download</li>
+      <li>Needs a WebGPU browser (Chrome / Edge / Safari&nbsp;17+)</li>
+      <li>Remove it anytime to free the space</li>
+    </ul>
+    <div class="row">
+      <button class="ghost" id="consent-cancel">Not now</button>
+      <button id="consent-ok">Enable &amp; download</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as webllm from "https://esm.run/@mlc-ai/web-llm"; // POC: latest. PROD: pin a version.
+
+// ── Models (A/B is a one-line change here) ───────────────────────────
+const MODELS = [
+  { id: "Qwen2.5-Coder-1.5B-Instruct-q4f16_1-MLC", label: "Qwen2.5-Coder 1.5B (default, ~1GB)" },
+  { id: "Qwen3.5-2B-q4f16_1-MLC",                   label: "Qwen3.5 2B (newer general, ~1.4GB)" },
+  { id: "Qwen2.5-Coder-3B-Instruct-q4f16_1-MLC",    label: "Qwen2.5-Coder 3B (~1.6GB)" },
+  { id: "Qwen2.5-Coder-0.5B-Instruct-q4f16_1-MLC",  label: "Qwen2.5-Coder 0.5B (tiny, ~0.6GB)" },
+];
+let MODEL_ID = MODELS[0].id;
+
+const DEFAULT_SYS =
+`You are a coding tutor inside FreetCode, a Python practice platform.
+The student is working on the problem below and has shared their code and the judge's verdict.
+Help them LEARN — do not solve it for them:
+- Give progressive hints and nudges; never write the full solution.
+- Point at the specific bug or inefficiency in THEIR code.
+- Be concise (a few sentences).
+- Use only the verdict/complexity facts provided — do not invent numbers.
+- For complexity, explain relative to the optimal.
+You do NOT have the reference solution and must not fabricate one.`;
+
+const DEFAULT_CTX =
+`PROBLEM: Two Sum — given an integer array nums and a target, return indices of the
+two numbers that add to target. Exactly one solution exists.
+
+STUDENT CODE:
+def two_sum(nums, target):
+    for i in range(len(nums)):
+        for j in range(i + 1, len(nums)):
+            if nums[i] + nums[j] == target:
+                return [i, j]
+
+VERDICT: Correct on samples and the scaled test, but SLOW.
+Slowdown ratio ~38x vs optimal. Growth curve ~ O(n^2) — grows faster than optimal's O(n).`;
+
+// ── DOM ──────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const gpuPill = $("gpu-pill"), statusPill = $("status-pill"), cacheLine = $("cache-line");
+let engine = null, stopFlag = false;
+
+// ── WebGPU detection ─────────────────────────────────────────────────
+const hasGPU = !!navigator.gpu;
+gpuPill.textContent = hasGPU ? "WebGPU ✓" : "no WebGPU";
+gpuPill.className = "pill " + (hasGPU ? "on" : "off");
+if (!hasGPU) { $("enable-btn").disabled = true; cacheLine.textContent =
+  "This browser has no WebGPU — the tutor can't run here. Try Chrome, Edge, or Safari 17+."; }
+
+// ── Cache status on load (proves reuse-across-visits) ────────────────
+async function refreshCache() {
+  try {
+    const cached = await webllm.hasModelInCache(MODEL_ID);
+    cacheLine.textContent = cached
+      ? "A model is already cached on this device — enabling will reuse it (no re-download)."
+      : "No model downloaded yet. Enabling triggers a one-time ~1 GB download.";
+  } catch { cacheLine.textContent = "Cache status unknown."; }
+}
+if (hasGPU) refreshCache();
+
+// ── Consent flow ─────────────────────────────────────────────────────
+$("enable-btn").onclick = () => $("consent").classList.remove("hidden");
+$("consent-cancel").onclick = () => $("consent").classList.add("hidden");
+$("consent-ok").onclick = () => { $("consent").classList.add("hidden"); loadModel(); };
+
+// ── Load (download-or-reuse) ─────────────────────────────────────────
+async function loadModel() {
+  $("gate").classList.add("hidden");
+  $("loading").classList.remove("hidden");
+  const t0 = performance.now();
+  try {
+    engine = await webllm.CreateMLCEngine(MODEL_ID, {
+      initProgressCallback: (r) => {
+        $("load-text").textContent = r.text;
+        $("load-bar").style.width = Math.round((r.progress || 0) * 100) + "%";
+      },
+    });
+    // Ask the browser not to evict the ~1GB between sessions.
+    let persisted = false;
+    if (navigator.storage?.persist) persisted = await navigator.storage.persist();
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+
+    $("loading").classList.add("hidden");
+    $("ready").classList.remove("hidden");
+    statusPill.textContent = "ready"; statusPill.className = "pill on";
+    $("active-model").textContent = MODEL_ID;
+    $("ready-line").textContent =
+      `Loaded in ${secs}s · storage ${persisted ? "persistent (won't auto-evict)" : "best-effort"}`;
+    $("sys").value = DEFAULT_SYS;
+    $("ctx").value = DEFAULT_CTX;
+  } catch (e) {
+    $("load-text").textContent = "Load failed: " + (e?.message || e);
+  }
+}
+
+// ── Remove from cache ────────────────────────────────────────────────
+$("remove-btn").onclick = async () => {
+  try {
+    if (engine?.unload) await engine.unload();
+    if (webllm.deleteModelAllInfoInCache) await webllm.deleteModelAllInfoInCache(MODEL_ID);
+    else { for (const k of await caches.keys()) await caches.delete(k); } // fallback
+  } catch (e) { alert("Remove error: " + (e?.message || e)); }
+  engine = null;
+  $("ready").classList.add("hidden");
+  $("gate").classList.remove("hidden");
+  statusPill.textContent = "off"; statusPill.className = "pill off";
+  refreshCache();
+};
+
+// ── Ask ──────────────────────────────────────────────────────────────
+document.querySelectorAll(".qa button").forEach(b =>
+  b.onclick = () => { $("q").value = b.dataset.q; send(); });
+$("send-btn").onclick = send;
+$("stop-btn").onclick = () => { stopFlag = true; };
+
+async function send() {
+  if (!engine) return;
+  const q = $("q").value.trim(); if (!q) return;
+  stopFlag = false;
+  $("send-btn").disabled = true; $("stop-btn").disabled = false;
+  $("out").textContent = ""; $("stat").textContent = "thinking…";
+  const messages = [
+    { role: "system", content: $("sys").value },
+    { role: "user", content: `${$("ctx").value}\n\nSTUDENT ASKS: ${q}` },
+  ];
+  const t0 = performance.now(); let firstTok = 0, n = 0;
+  try {
+    const stream = await engine.chat.completions.create({
+      messages, stream: true, temperature: 0.4, max_tokens: 512,
+    });
+    for await (const chunk of stream) {
+      if (stopFlag) break;
+      const d = chunk.choices[0]?.delta?.content || "";
+      if (d) { if (!firstTok) firstTok = performance.now() - t0; n++; $("out").textContent += d; }
+    }
+  } catch (e) { $("out").textContent += "\n[error] " + (e?.message || e); }
+  const total = (performance.now() - t0) / 1000;
+  $("stat").textContent =
+    `first token ${(firstTok/1000).toFixed(2)}s · ~${(n/total).toFixed(0)} tok/s · ${total.toFixed(1)}s total`;
+  $("send-btn").disabled = false; $("stop-btn").disabled = true;
+}
+</script>
+</body>
+</html>

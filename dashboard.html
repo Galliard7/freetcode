@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreetCode — Community Stats</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50' font-weight='800' fill='white'>&lt;/&gt;</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="themes.css?v=2">
+<script>
+  (function(){
+    var THEMES = ['refined-dark','brutalist','glassy','warm'];
+    var t = localStorage.getItem('freetcode_theme');
+    document.documentElement.dataset.theme = THEMES.indexOf(t) >= 0 ? t : 'refined-dark';
+  })();
+</script>
+<style>
+  body { margin: 0; background: var(--bg-base, #0b0d12); color: var(--fg-primary, #e6e9ef); font-family: var(--font-ui, 'Inter', sans-serif); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 20px 80px; }
+  .top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .logo-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--accent, #6366f1); color: #fff; display: grid; place-items: center; font-weight: 800; font-family: var(--font-mono, monospace); }
+  h1 { font-size: 22px; margin: 0; }
+  .sub { color: var(--fg-muted, #8a93a6); font-size: 13px; margin: 2px 0 24px; }
+  .sub a { color: var(--accent, #6366f1); text-decoration: none; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .card { padding: 16px; border: 1px solid var(--border-strong, #232a38); border-radius: 12px; background: rgba(255,255,255,0.02); }
+  .card .big { font-size: 28px; font-weight: 800; }
+  .card .lbl { color: var(--fg-muted, #8a93a6); font-size: 12px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-strong, #232a38); }
+  th { color: var(--fg-muted, #8a93a6); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  td.num, th.num { text-align: right; font-family: var(--font-mono, monospace); }
+  .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; min-width: 80px; }
+  .bar > span { display: block; height: 100%; background: var(--accent, #6366f1); }
+  .pass-good { color: var(--easy, #10b981); }
+  .pass-bad { color: var(--hard, #ef4444); }
+  .muted { color: var(--fg-muted, #8a93a6); }
+  .empty { padding: 40px; text-align: center; color: var(--fg-muted, #8a93a6); border: 1px dashed var(--border-strong, #232a38); border-radius: 12px; }
+  .badge { font-size: 10px; padding: 2px 6px; border-radius: 5px; background: rgba(99,102,241,0.15); color: var(--accent, #6366f1); margin-left: 8px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo-mark">&lt;/&gt;</div>
+    <h1>Community Stats <span class="badge" id="env-badge">v2</span></h1>
+  </div>
+  <div class="sub">Anonymous, aggregate submission stats. No accounts, no tracking. · <a href="./">← Back to FreetCode</a></div>
+
+  <div id="content"><div class="empty">Loading…</div></div>
+</div>
+
+<script src="stats.js?v=3"></script>
+<script>
+(async function () {
+  const content = document.getElementById('content');
+  const _badge = document.getElementById('env-badge');
+  if (Stats.ENV === 'prod') _badge.style.display = 'none'; else _badge.textContent = Stats.ENV;
+
+  if (!Stats.enabled()) {
+    content.innerHTML = '<div class="empty">📊 The dashboard goes live once the stats backend is deployed.<br>(Configure the Worker URL in <code>stats.js</code>.)</div>';
+    return;
+  }
+
+  // Titles from the problem index (served from KV by the Worker)
+  let titles = {};
+  try {
+    const ps = await (await fetch(Stats.base() + '/problems/index', { cache: 'no-cache' })).json();
+    for (const p of ps) titles[p.num] = p.title;
+  } catch {}
+
+  const data = await Stats.getStats();
+  if (!data || !data.problems) {
+    content.innerHTML = '<div class="empty">Could not reach the stats backend.</div>';
+    return;
+  }
+
+  const t = data.totals || {};
+  const solvedDistinct = data.problems.reduce((s, p) => s + (p.solvers || 0), 0);
+  let html = `<div class="cards">
+    <div class="card"><div class="big">${(t.attempts || 0).toLocaleString()}</div><div class="lbl">Submissions</div></div>
+    <div class="card"><div class="big">${(t.accepted || 0).toLocaleString()}</div><div class="lbl">Accepted</div></div>
+    <div class="card"><div class="big">${(t.problems_attempted || 0).toLocaleString()}</div><div class="lbl">Problems attempted</div></div>
+    <div class="card"><div class="big">${solvedDistinct.toLocaleString()}</div><div class="lbl">Solver entries</div></div>
+  </div>`;
+
+  if (!data.problems.length) {
+    html += '<div class="empty">No submissions yet — be the first.</div>';
+    content.innerHTML = html;
+    return;
+  }
+
+  html += `<table><thead><tr>
+    <th>#</th><th>Problem</th>
+    <th class="num">Submissions</th><th class="num">People</th>
+    <th>Solve rate</th><th class="num" title="% who passed on their first-ever submission">First-try</th>
+    <th class="num" title="Median submissions before solving">Median tries</th>
+    <th class="num">Solvers</th><th>Unlock</th>
+  </tr></thead><tbody>`;
+  for (const p of data.problems) {
+    const title = titles[p.problem] || ('Problem ' + p.problem);
+    const rate = p.solve_rate || 0;
+    const rateCls = rate >= 50 ? 'pass-good' : 'pass-bad';
+    const need = Math.max(0, (t.unlock_at || 100) - (p.solvers || 0));
+    const unlock = need === 0
+      ? '<span class="pass-good">🔓 live</span>'
+      : `<span class="muted">${p.solvers || 0}/${t.unlock_at || 100}</span>`;
+    const ftxt = p.first_try_pct != null ? p.first_try_pct + '%' : '—';
+    const mtxt = p.median_tries != null ? p.median_tries : '—';
+    html += `<tr>
+      <td class="num muted">${p.problem}</td>
+      <td>${title}</td>
+      <td class="num">${(p.attempts || 0).toLocaleString()}</td>
+      <td class="num">${(p.attempters || 0).toLocaleString()}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><span style="width:${rate}%"></span></div><span class="${rateCls}">${rate}%</span></div></td>
+      <td class="num">${ftxt}</td>
+      <td class="num">${mtxt}</td>
+      <td class="num">${p.accepters || 0}</td>
+      <td>${unlock}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  content.innerHTML = html;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+/* ═══════════════════════════════════════════════════════════════════
+   FreetCode — Scratchpad (freehand sketch + notes), per-problem.
+   Adjustable vertical split beside the Monaco editor. Theme-driven.
+   Revert: delete scratch.js + scratch.css and the #scratch* markup +
+   the .editor-row wrapper in index.html.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* horizontal split row that now holds the editor (+ optional scratchpad) */
+.editor-row { display: flex; flex-direction: row; flex: 1 1 auto; min-height: 120px; overflow: hidden; }
+.editor-row > .editor-container { min-width: 0; }  /* let Monaco shrink */
+
+/* hidden until toggled open */
+#scratch-divider, #scratchpad { display: none; }
+.main.scratch-open #scratch-divider { display: block; }
+.main.scratch-open #scratchpad { display: flex; }
+
+.scratch-divider {
+  width: 6px; flex-shrink: 0; cursor: ew-resize;
+  background: var(--border); transition: background .15s;
+}
+.scratch-divider:hover, .scratch-divider.dragging { background: var(--accent); }
+
+.scratchpad {
+  width: 380px; max-width: 70%; flex-shrink: 0; flex-direction: column;
+  background: var(--bg-panel); border-left: 1px solid var(--border); overflow: hidden;
+}
+
+.scratch-toolbar {
+  display: flex; align-items: center; gap: 5px; padding: 6px 8px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.scratch-toolbar button {
+  background: var(--bg-input); border: 1px solid var(--border); color: var(--fg-secondary);
+  border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px;
+  width: 28px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+}
+.scratch-toolbar button:hover { border-color: var(--accent); color: var(--fg-primary); }
+.scratch-tool.active, .scratch-size.active { border-color: var(--accent); color: var(--fg-strong); background: var(--accent-soft); }
+.scratch-toolbar .scratch-swatch { width: 20px; height: 20px; border-radius: 50%; padding: 0; }
+.scratch-toolbar .scratch-swatch.active { box-shadow: 0 0 0 2px var(--bg-panel), 0 0 0 4px var(--accent); }
+.scratch-size i { display: block; border-radius: 50%; background: currentColor; }
+.scratch-sep { width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
+.scratch-spacer { flex: 1; }
+
+.scratch-canvas-wrap { flex: 1; position: relative; min-height: 80px; background: var(--bg-editor); }
+#scratch-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+
+#scratch-notes {
+  flex-shrink: 0; height: 132px; resize: none; outline: none;
+  border: none; border-top: 1px solid var(--border);
+  background: var(--bg-panel); color: var(--fg-primary);
+  font-family: var(--font-ui); font-size: 12.5px; line-height: 1.5; padding: 8px 10px;
+}
+
+@media (max-width: 760px) { .scratchpad { width: 100%; } }

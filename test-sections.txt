@@ -1,0 +1,889 @@
+=== NUM: 3 ===
+# Test cases
+sol = Solution()
+print(sol.lengthOfLongestSubstring("abcabcbb"))  # Expected: 3
+print(sol.lengthOfLongestSubstring("bbbbb"))      # Expected: 1
+print(sol.lengthOfLongestSubstring("pwwkew"))     # Expected: 3
+print(sol.lengthOfLongestSubstring(""))            # Expected: 0
+===
+
+=== NUM: 5 ===
+# Test cases
+sol = Solution()
+print(sol.longestPalindrome('babad'))    # Expected: 'bab' or 'aba'
+print(sol.longestPalindrome('cbbd'))     # Expected: 'bb'
+print(sol.longestPalindrome('a'))        # Expected: 'a'
+===
+
+=== NUM: 11 ===
+# Test cases
+sol = Solution()
+print(sol.maxArea([1, 8, 6, 2, 5, 4, 8, 3, 7]))  # Expected: 49
+print(sol.maxArea([1, 1]))                          # Expected: 1
+print(sol.maxArea([4, 3, 2, 1, 4]))                 # Expected: 16
+===
+
+=== NUM: 15 ===
+# Test cases
+sol = Solution()
+print(sol.threeSum([-1, 0, 1, 2, -1, -4]))  # Expected: [[-1, -1, 2], [-1, 0, 1]]
+print(sol.threeSum([0, 1, 1]))                # Expected: []
+print(sol.threeSum([0, 0, 0]))                # Expected: [[0, 0, 0]]
+===
+
+=== NUM: 23 ===
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def build(arr):
+    dummy = ListNode(0)
+    cur = dummy
+    for v in arr:
+        cur.next = ListNode(v)
+        cur = cur.next
+    return dummy.next
+
+def show(head):
+    res = []
+    while head:
+        res.append(head.val)
+        head = head.next
+    return res
+
+
+sol = Solution()
+print(show(sol.mergeKLists([build([1,4,5]), build([1,3,4]), build([2,6])])))   # [1, 1, 2, 3, 4, 4, 5, 6]
+print(show(sol.mergeKLists([])))                                                # []
+print(show(sol.mergeKLists([build([])])))                                       # []
+===
+
+=== NUM: 39 ===
+sol = Solution()
+print(sorted(sol.combinationSum([2, 3, 6, 7], 7)))  # [[2, 2, 3], [7]]
+print(sorted(sol.combinationSum([2, 3, 5], 8)))      # [[2, 2, 2, 2], [2, 3, 3], [3, 5]]
+print(sol.combinationSum([2], 1))                    # []
+===
+
+=== NUM: 40 ===
+sol = Solution()
+print(sorted(sol.combinationSum2([10, 1, 2, 7, 6, 1, 5], 8)))  # [[1, 1, 6], [1, 2, 5], [1, 7], [2, 6]]
+print(sorted(sol.combinationSum2([2, 5, 2, 1, 2], 5)))          # [[1, 2, 2], [5]]
+===
+
+=== NUM: 42 ===
+# Test cases
+sol = Solution()
+print(sol.trap([0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]))  # Expected: 6
+print(sol.trap([4, 2, 0, 3, 2, 5]))                       # Expected: 9
+print(sol.trap([1, 0, 1]))                                 # Expected: 1
+===
+
+=== NUM: 46 ===
+sol = Solution()
+print(sorted(sol.permute([1, 2, 3])))  # [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+print(sol.permute([0, 1]))             # [[0, 1], [1, 0]]
+print(sol.permute([1]))                # [[1]]
+===
+
+=== NUM: 53 ===
+# Test cases
+sol = Solution()
+print(sol.maxSubArray([-2,1,-3,4,-1,2,1,-5,4]))   # Expected: 6
+print(sol.maxSubArray([1]))                        # Expected: 1
+print(sol.maxSubArray([5,4,-1,7,8]))               # Expected: 23
+===
+
+=== NUM: 55 ===
+# Test cases
+sol = Solution()
+print(sol.canJump([2, 3, 1, 1, 4]))    # Expected: True
+print(sol.canJump([3, 2, 1, 0, 4]))    # Expected: False
+===
+
+=== NUM: 62 ===
+# Test cases
+sol = Solution()
+print(sol.uniquePaths(3, 7))   # Expected: 28
+print(sol.uniquePaths(3, 2))   # Expected: 3
+===
+
+=== NUM: 70 ===
+# Test cases
+sol = Solution()
+print(sol.climbStairs(2))   # Expected: 2
+print(sol.climbStairs(3))   # Expected: 3
+print(sol.climbStairs(5))   # Expected: 8
+===
+
+=== NUM: 78 ===
+sol = Solution()
+print(sorted(sol.subsets([1, 2, 3])))  # [[], [1], [1, 2], [1, 2, 3], [1, 3], [2], [2, 3], [3]]
+print(sol.subsets([0]))                # [[], [0]]
+===
+
+=== NUM: 84 ===
+# Test cases
+sol = Solution()
+print(sol.largestRectangleArea([2, 1, 5, 6, 2, 3]))  # Expected: 10
+print(sol.largestRectangleArea([2, 4]))                # Expected: 4
+print(sol.largestRectangleArea([1]))                    # Expected: 1
+===
+
+=== NUM: 90 ===
+sol = Solution()
+print(sorted(sol.subsetsWithDup([1, 2, 2])))  # [[], [1], [1, 2], [1, 2, 2], [2], [2, 2]]
+print(sorted(sol.subsetsWithDup([0])))         # [[], [0]]
+===
+
+=== NUM: 98 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.isValidBST(build([2,1,3])))        # True
+print(sol.isValidBST(build([5,1,4,None,None,3,6])))  # False
+print(sol.isValidBST(build([5,4,6,None,None,3,7])))  # False
+===
+
+=== NUM: 102 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.levelOrder(build([3,9,20,None,None,15,7])))  # [[3], [9, 20], [15, 7]]
+print(sol.levelOrder(build([1])))                       # [[1]]
+print(sol.levelOrder(build([])))                        # []
+===
+
+=== NUM: 104 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.maxDepth(build([3,9,20,None,None,15,7])))  # 3
+print(sol.maxDepth(build([1,None,2])))                # 2
+print(sol.maxDepth(build([])))                        # 0
+===
+
+=== NUM: 110 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.isBalanced(build([3,9,20,None,None,15,7])))  # True
+print(sol.isBalanced(build([1,2,2,3,3,None,None,4,4])))  # False
+print(sol.isBalanced(build([])))                        # True
+===
+
+=== NUM: 121 ===
+# Test cases
+sol = Solution()
+print(sol.maxProfit([7, 1, 5, 3, 6, 4]))  # Expected: 5
+print(sol.maxProfit([7, 6, 4, 3, 1]))      # Expected: 0
+print(sol.maxProfit([2, 4, 1]))             # Expected: 2
+===
+
+=== NUM: 124 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.maxPathSum(build([1,2,3])))              # 6
+print(sol.maxPathSum(build([-10,9,20,None,None,15,7])))  # 42
+print(sol.maxPathSum(build([-3])))                  # -3
+===
+
+=== NUM: 130 ===
+sol = Solution()
+board1 = [["X","X","X","X"],["X","O","O","X"],["X","X","O","X"],["X","O","X","X"]]
+sol.solve(board1)
+print(board1)  # [['X', 'X', 'X', 'X'], ['X', 'X', 'X', 'X'], ['X', 'X', 'X', 'X'], ['X', 'O', 'X', 'X']]
+board2 = [["X"]]
+sol.solve(board2)
+print(board2)  # [['X']]
+===
+
+=== NUM: 133 ===
+class Node:
+    def __init__(self, val=0, neighbors=None):
+        self.val = val
+        self.neighbors = neighbors if neighbors is not None else []
+
+def build_graph(adj_list):
+    if not adj_list:
+        return None
+    nodes = {i: Node(i) for i in range(1, len(adj_list) + 1)}
+    for i, neighbors in enumerate(adj_list):
+        nodes[i + 1].neighbors = [nodes[n] for n in neighbors]
+    return nodes[1]
+
+def graph_to_adj(node):
+    if not node:
+        return []
+    visited = {}
+    def dfs(n):
+        if n.val in visited:
+            return
+        visited[n.val] = [nb.val for nb in n.neighbors]
+        for nb in n.neighbors:
+            dfs(nb)
+    dfs(node)
+    return [visited[i] for i in sorted(visited)]
+
+sol = Solution()
+g1 = build_graph([[2, 4], [1, 3], [2, 4], [1, 3]])
+clone1 = sol.cloneGraph(g1)
+print(graph_to_adj(clone1))  # [[2, 4], [1, 3], [2, 4], [1, 3]]
+print(clone1 is not g1)      # True
+print(sol.cloneGraph(None))  # None
+===
+
+=== NUM: 141 ===
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def build_cycle(arr, pos):
+    if not arr:
+        return None
+    nodes = [ListNode(v) for v in arr]
+    for i in range(len(nodes) - 1):
+        nodes[i].next = nodes[i + 1]
+    if pos >= 0:
+        nodes[-1].next = nodes[pos]
+    return nodes[0]
+
+
+sol = Solution()
+print(sol.hasCycle(build_cycle([3, 2, 0, -4], 1)))   # True
+print(sol.hasCycle(build_cycle([1, 2], 0)))            # True
+print(sol.hasCycle(build_cycle([1], -1)))               # False
+===
+
+=== NUM: 143 ===
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def build(arr):
+    dummy = ListNode(0)
+    cur = dummy
+    for v in arr:
+        cur.next = ListNode(v)
+        cur = cur.next
+    return dummy.next
+
+def show(head):
+    res = []
+    while head:
+        res.append(head.val)
+        head = head.next
+    return res
+
+
+sol = Solution()
+h1 = build([1, 2, 3, 4])
+sol.reorderList(h1)
+print(show(h1))   # [1, 4, 2, 3]
+
+h2 = build([1, 2, 3, 4, 5])
+sol.reorderList(h2)
+print(show(h2))   # [1, 5, 2, 4, 3]
+===
+
+=== NUM: 146 ===
+cache = LRUCache(2)
+cache.put(1, 1)
+cache.put(2, 2)
+print(cache.get(1))      # 1
+cache.put(3, 3)
+print(cache.get(2))      # -1
+cache.put(4, 4)
+print(cache.get(1))      # -1
+print(cache.get(3))      # 3
+print(cache.get(4))      # 4
+===
+
+=== NUM: 155 ===
+# Test cases
+ms = MinStack()
+ms.push(-2)
+ms.push(0)
+ms.push(-3)
+print(ms.getMin())  # Expected: -3
+ms.pop()
+print(ms.top())     # Expected: 0
+print(ms.getMin())  # Expected: -2
+===
+
+=== NUM: 198 ===
+# Test cases
+sol = Solution()
+print(sol.rob([1, 2, 3, 1]))       # Expected: 4
+print(sol.rob([2, 7, 9, 3, 1]))    # Expected: 12
+print(sol.rob([2, 1, 1, 2]))       # Expected: 4
+===
+
+=== NUM: 199 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.rightSideView(build([1,2,3,None,5,None,4])))  # [1, 3, 4]
+print(sol.rightSideView(build([1,None,3])))              # [1, 3]
+print(sol.rightSideView(build([])))                      # []
+===
+
+=== NUM: 200 ===
+sol = Solution()
+print(sol.numIslands([
+    ["1","1","1","1","0"],
+    ["1","1","0","1","0"],
+    ["1","1","0","0","0"],
+    ["0","0","0","0","0"]
+]))  # 1
+print(sol.numIslands([
+    ["1","1","0","0","0"],
+    ["1","1","0","0","0"],
+    ["0","0","1","0","0"],
+    ["0","0","0","1","1"]
+]))  # 3
+===
+
+=== NUM: 206 ===
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+def build(arr):
+    dummy = ListNode(0)
+    cur = dummy
+    for v in arr:
+        cur.next = ListNode(v)
+        cur = cur.next
+    return dummy.next
+
+def show(head):
+    res = []
+    while head:
+        res.append(head.val)
+        head = head.next
+    return res
+
+
+sol = Solution()
+print(show(sol.reverseList(build([1, 2, 3, 4, 5]))))   # [5, 4, 3, 2, 1]
+print(show(sol.reverseList(build([1, 2]))))              # [2, 1]
+print(show(sol.reverseList(build([]))))                  # []
+===
+
+=== NUM: 207 ===
+sol = Solution()
+print(sol.canFinish(2, [[1, 0]]))          # True
+print(sol.canFinish(2, [[1, 0], [0, 1]]))  # False
+print(sol.canFinish(5, [[1,4],[2,4],[3,1],[3,2]]))  # True
+===
+
+=== NUM: 210 ===
+sol = Solution()
+print(sol.findOrder(2, [[1, 0]]))                    # [0, 1]
+print(sol.findOrder(4, [[1,0],[2,0],[3,1],[3,2]]))   # [0, 1, 2, 3] or [0, 2, 1, 3]
+print(sol.findOrder(1, []))                          # [0]
+===
+
+=== NUM: 213 ===
+# Test cases
+sol = Solution()
+print(sol.rob([2, 3, 2]))       # Expected: 3
+print(sol.rob([1, 2, 3, 1]))    # Expected: 4
+print(sol.rob([1, 2, 3]))       # Expected: 3
+===
+
+=== NUM: 226 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(to_list(sol.invertTree(build([4,2,7,1,3,6,9]))))  # [4, 7, 2, 9, 6, 3, 1]
+print(to_list(sol.invertTree(build([2,1,3]))))           # [2, 3, 1]
+print(to_list(sol.invertTree(build([]))))                # []
+===
+
+=== NUM: 261 ===
+sol = Solution()
+print(sol.validTree(5, [[0,1],[0,2],[0,3],[1,4]]))   # True
+print(sol.validTree(5, [[0,1],[1,2],[2,3],[1,3],[1,4]]))  # False
+print(sol.validTree(1, []))  # True
+===
+
+=== NUM: 268 ===
+# Test cases
+sol = Solution()
+print(sol.missingNumber([3, 0, 1]))       # Expected: 2
+print(sol.missingNumber([0, 1]))           # Expected: 2
+print(sol.missingNumber([9,6,4,2,3,5,7,0,1]))  # Expected: 8
+===
+
+=== NUM: 286 ===
+sol = Solution()
+INF = 2147483647
+rooms1 = [[INF,-1,0,INF],[INF,INF,INF,-1],[INF,-1,INF,-1],[0,-1,INF,INF]]
+sol.wallsAndGates(rooms1)
+print(rooms1)  # [[3, -1, 0, 1], [2, 2, 1, -1], [1, -1, 2, -1], [0, -1, 3, 4]]
+rooms2 = [[-1]]
+sol.wallsAndGates(rooms2)
+print(rooms2)  # [[-1]]
+===
+
+=== NUM: 287 ===
+sol = Solution()
+print(sol.findDuplicate([1, 3, 4, 2, 2]))   # 2
+print(sol.findDuplicate([3, 1, 3, 4, 2]))   # 3
+print(sol.findDuplicate([1, 1]))              # 1
+===
+
+=== NUM: 300 ===
+# Test cases
+sol = Solution()
+print(sol.lengthOfLIS([10, 9, 2, 5, 3, 7, 101, 18]))  # Expected: 4
+print(sol.lengthOfLIS([0, 1, 0, 3, 2, 3]))             # Expected: 4
+print(sol.lengthOfLIS([7, 7, 7, 7, 7, 7, 7]))          # Expected: 1
+===
+
+=== NUM: 322 ===
+# Test cases
+sol = Solution()
+print(sol.coinChange([1, 5, 10, 25], 30))   # Expected: 2
+print(sol.coinChange([2], 3))                # Expected: -1
+print(sol.coinChange([1], 0))                # Expected: 0
+===
+
+=== NUM: 323 ===
+sol = Solution()
+print(sol.countComponents(5, [[0,1],[1,2],[3,4]]))        # 2
+print(sol.countComponents(5, [[0,1],[1,2],[2,3],[3,4]]))   # 1
+===
+
+=== NUM: 338 ===
+# Test cases
+sol = Solution()
+print(sol.countBits(2))    # Expected: [0, 1, 1]
+print(sol.countBits(5))    # Expected: [0, 1, 1, 2, 1, 2]
+===
+
+=== NUM: 417 ===
+sol = Solution()
+print(sorted(sol.pacificAtlantic([
+    [1,2,2,3,5],
+    [3,2,3,4,4],
+    [2,4,5,3,1],
+    [6,7,1,4,5],
+    [5,1,1,2,4]
+])))  # [[0, 4], [1, 3], [1, 4], [2, 2], [3, 0], [3, 1], [4, 0]]
+print(sol.pacificAtlantic([[1]]))  # [[0, 0]]
+===
+
+=== NUM: 543 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.diameterOfBinaryTree(build([1,2,3,4,5])))  # 3
+print(sol.diameterOfBinaryTree(build([1,2])))         # 1
+===
+
+=== NUM: 572 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.isSubtree(build([3,4,5,1,2]), build([4,1,2])))            # True
+print(sol.isSubtree(build([3,4,5,1,2,None,None,None,None,0]), build([4,1,2])))  # False
+===
+
+=== NUM: 647 ===
+# Test cases
+sol = Solution()
+print(sol.countSubstrings('abc'))    # Expected: 3
+print(sol.countSubstrings('aaa'))    # Expected: 6
+===
+
+=== NUM: 684 ===
+sol = Solution()
+print(sol.findRedundantConnection([[1,2],[1,3],[2,3]]))          # [2, 3]
+print(sol.findRedundantConnection([[1,2],[2,3],[3,4],[1,4],[1,5]]))  # [1, 4]
+===
+
+=== NUM: 695 ===
+sol = Solution()
+print(sol.maxAreaOfIsland([
+    [0,0,1,0,0,0,0,1,0,0,0,0,0],
+    [0,0,0,0,0,0,0,1,1,1,0,0,0],
+    [0,1,1,0,1,0,0,0,0,0,0,0,0],
+    [0,1,0,0,1,1,0,0,1,0,1,0,0],
+    [0,1,0,0,1,1,0,0,1,1,1,0,0],
+    [0,0,0,0,0,0,0,0,0,0,1,0,0],
+    [0,0,0,0,0,0,0,1,1,1,0,0,0],
+    [0,0,0,0,0,0,0,1,1,0,0,0,0]
+]))  # 6
+print(sol.maxAreaOfIsland([[0,0,0,0,0,0,0,0]]))  # 0
+===
+
+=== NUM: 739 ===
+# Test cases
+sol = Solution()
+print(sol.dailyTemperatures([73,74,75,71,69,72,76,73]))  # Expected: [1, 1, 4, 2, 1, 1, 0, 0]
+print(sol.dailyTemperatures([30,40,50,60]))               # Expected: [1, 1, 1, 0]
+print(sol.dailyTemperatures([30,60,90]))                   # Expected: [1, 1, 0]
+===
+
+=== NUM: 743 ===
+sol = Solution()
+print(sol.networkDelayTime([[2,1,1],[2,3,1],[3,4,1]], 4, 2))  # 2
+print(sol.networkDelayTime([[1,2,1]], 2, 1))                   # 1
+print(sol.networkDelayTime([[1,2,1]], 2, 2))                   # -1
+===
+
+=== NUM: 787 ===
+sol = Solution()
+print(sol.findCheapestPrice(4, [[0,1,100],[1,2,100],[2,0,100],[1,3,600],[2,3,200]], 0, 3, 1))  # 700
+print(sol.findCheapestPrice(3, [[0,1,100],[1,2,100],[0,2,500]], 0, 2, 1))  # 200
+print(sol.findCheapestPrice(3, [[0,1,100],[1,2,100],[0,2,500]], 0, 2, 0))  # 500
+===
+
+=== NUM: 994 ===
+sol = Solution()
+print(sol.orangesRotting([[2,1,1],[1,1,0],[0,1,1]]))  # 4
+print(sol.orangesRotting([[2,1,1],[0,1,1],[1,0,1]]))  # -1
+print(sol.orangesRotting([[0,2]]))                     # 0
+===
+
+=== NUM: 1143 ===
+# Test cases
+sol = Solution()
+print(sol.longestCommonSubsequence('abcde', 'ace'))     # Expected: 3
+print(sol.longestCommonSubsequence('abc', 'abc'))       # Expected: 3
+print(sol.longestCommonSubsequence('abc', 'def'))       # Expected: 0
+===
+
+=== NUM: 1448 ===
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+def build(values):
+    if not values: return None
+    root = TreeNode(values[0])
+    q = deque([root])
+    i = 1
+    while q and i < len(values):
+        node = q.popleft()
+        if i < len(values) and values[i] is not None:
+            node.left = TreeNode(values[i]); q.append(node.left)
+        i += 1
+        if i < len(values) and values[i] is not None:
+            node.right = TreeNode(values[i]); q.append(node.right)
+        i += 1
+    return root
+
+def to_list(root):
+    if not root: return []
+    out, q = [], deque([root])
+    while q:
+        n = q.popleft()
+        if n is None: out.append(None); continue
+        out.append(n.val)
+        q.append(n.left); q.append(n.right)
+    while out and out[-1] is None: out.pop()
+    return out
+
+
+sol = Solution()
+print(sol.goodNodes(build([3,1,4,3,None,1,5])))  # 4
+print(sol.goodNodes(build([3,3,None,4,2])))       # 3
+print(sol.goodNodes(build([1])))                  # 1
+===
+
+=== NUM: 1584 ===
+sol = Solution()
+print(sol.minCostConnectPoints([[0,0],[2,2],[3,10],[5,2],[7,0]]))  # 20
+print(sol.minCostConnectPoints([[3,12],[-2,5],[-4,1]]))            # 18
+print(sol.minCostConnectPoints([[0,0]]))                           # 0
+===

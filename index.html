@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<!--
+  FreetCode — a learn-to-code study tool.
+  SPDX-License-Identifier: AGPL-3.0-or-later
+  Copyright (C) 2026 Galliard7. This program is free software under the GNU
+  Affero General Public License v3 or later. Source: https://github.com/Galliard7/freetcode
+  See LICENSE for terms — notably, running a modified version as a network
+  service requires publishing your modified source under the same license.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreetCode — Free Algorithm Interview Prep</title>
+<meta name="description" content="Free, open-source coding interview prep. 150 NeetCode problems with solutions, interactive algorithm visualizers. No login, no paywall.">
+<meta property="og:title" content="FreetCode — Free Algorithm Interview Prep">
+<meta property="og:description" content="150 NeetCode problems, interactive visualizers. All free, all in your browser.">
+<meta name="theme-color" content="#6366f1">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50' font-weight='800' fill='white'>&lt;/&gt;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="themes.css?v=2">
+<link rel="stylesheet" href="tutor.css?v=2">
+<link rel="stylesheet" href="scratch.css?v=1">
+<script>
+  // Apply saved theme before paint to avoid flash of wrong skin
+  (function(){
+    var THEMES = ['refined-dark','brutalist','glassy','warm'];
+    var t = localStorage.getItem('freetcode_theme');
+    document.documentElement.dataset.theme = THEMES.indexOf(t) >= 0 ? t : 'refined-dark';
+  })();
+</script>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Header -->
+    <header class="header">
+      <button class="btn-icon" id="sidebar-toggle" title="Toggle sidebar">☰</button>
+      <a href="./" class="logo" style="text-decoration:none">
+        <div class="logo-mark">&lt;/&gt;</div>
+        <span>FreetCode</span>
+      </a>
+      <div class="header-spacer"></div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" id="theme-cycle" title="Switch theme (click to cycle)"><span class="theme-dot"></span> <span class="btn-text" id="theme-cycle-label">Dark</span></button>
+        <a class="btn btn-ghost" href="dashboard.html" title="Community stats" target="_blank" rel="noopener" style="text-decoration:none">📊 <span class="btn-text">Stats</span></a>
+        <button class="btn btn-ghost" id="settings-btn" title="Settings">⚙</button>
+      </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Problems</span>
+      </div>
+      <div class="sidebar-search">
+        <input type="text" id="problem-search" placeholder="Search problems..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="collection-filter" id="collection-filter"></div>
+      <div class="problem-list" id="problem-list"><div style="padding:20px 14px;color:var(--fg-muted);font-size:12px;text-align:center">Loading problems...</div></div>
+      <div class="sidebar-footer">
+        <div class="progress-label">
+          <span>Progress</span>
+          <span id="progress-count">0 / 0</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Sidebar backdrop (mobile) -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- Main Editor Area -->
+    <main class="main" id="main">
+      <div class="toolbar">
+        <div class="toolbar-problem-info">
+          <span class="toolbar-problem-title" id="current-problem-title">Select a problem</span>
+          <span class="pill" id="current-difficulty" style="display:none"></span>
+        </div>
+        <div class="toolbar-tags" id="current-tags"></div>
+        <div class="toolbar-spacer"></div>
+        <div class="solution-picker" id="solution-picker" style="display:none">
+          <button class="btn btn-ghost" id="solution-toggle">Show Solution</button>
+          <button class="btn btn-ghost solution-picker-arrow" id="solution-picker-arrow" style="display:none" title="Alternate solutions">▾</button>
+          <div class="solution-dropdown" id="solution-dropdown"></div>
+        </div>
+        <button class="btn btn-ghost" id="reset-code" style="display:none" title="Reset to template">↺ Reset</button>
+        <button class="btn btn-ghost" id="mark-solved" style="display:none" title="Mark as solved">✓ Solved</button>
+        <button class="btn btn-ghost" id="run-btn" disabled title="Run your code (unjudged scratchpad)">▶ Run <kbd>⌘↵</kbd></button>
+        <button class="btn btn-primary" id="submit-btn" disabled style="display:none" title="Submit for grading: correctness + scaled stress test">✓ Submit <kbd>⌘⇧↵</kbd></button>
+      </div>
+      <div class="desc-panel" id="desc-panel" style="display:none">
+        <div class="desc-header">
+          <span class="desc-tab">DESCRIPTION</span>
+          <button class="btn-icon" id="desc-close" title="Hide description">✕</button>
+        </div>
+        <div class="desc-content" id="desc-content"></div>
+      </div>
+      <div class="complexity-bar" id="complexity-bar" style="display:none">
+        <span class="complexity-item"><span class="complexity-label">Time</span> <span id="complexity-time"></span></span>
+        <span class="complexity-sep">│</span>
+        <span class="complexity-item"><span class="complexity-label">Space</span> <span id="complexity-space"></span></span>
+      </div>
+      <div class="editor-row" id="editor-row">
+      <div class="editor-container">
+        <div id="py-loading-banner" style="position:absolute;bottom:0;left:0;right:0;z-index:5;padding:10px 14px;background:rgba(99,102,241,0.12);border-top:1px solid rgba(99,102,241,0.3);font-size:12px;color:var(--accent);display:flex;align-items:center;gap:8px">
+          <span id="py-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid rgba(99,102,241,0.3);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite"></span>
+          <span id="py-loading-text">Loading Python runtime...</span>
+        </div>
+        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+        <div id="editor"></div>
+      </div>
+        <div class="scratch-divider" id="scratch-divider" title="Drag to resize"></div>
+        <aside class="scratchpad" id="scratchpad">
+          <div class="scratch-toolbar">
+            <button class="scratch-tool active" data-tool="pen" title="Pen">✏</button>
+            <button class="scratch-tool" data-tool="eraser" title="Eraser">⌫</button>
+            <span class="scratch-sep"></span>
+            <button class="scratch-swatch active" data-color="#e2e8f0" style="background:#e2e8f0" title="White"></button>
+            <button class="scratch-swatch" data-color="#7c83ff" style="background:#7c83ff" title="Indigo"></button>
+            <button class="scratch-swatch" data-color="#34d399" style="background:#34d399" title="Green"></button>
+            <button class="scratch-swatch" data-color="#fb7185" style="background:#fb7185" title="Red"></button>
+            <button class="scratch-swatch" data-color="#fbbf24" style="background:#fbbf24" title="Amber"></button>
+            <span class="scratch-sep"></span>
+            <button class="scratch-size active" data-size="2" title="Thin"><i style="width:4px;height:4px"></i></button>
+            <button class="scratch-size" data-size="4" title="Medium"><i style="width:7px;height:7px"></i></button>
+            <button class="scratch-size" data-size="7" title="Thick"><i style="width:11px;height:11px"></i></button>
+            <span class="scratch-spacer"></span>
+            <button class="scratch-act" id="scratch-undo" title="Undo">↶</button>
+            <button class="scratch-act" id="scratch-clear" title="Clear drawing">🗑</button>
+          </div>
+          <div class="scratch-canvas-wrap"><canvas id="scratch-canvas"></canvas></div>
+          <textarea id="scratch-notes" placeholder="Notes — think through the problem…" spellcheck="false"></textarea>
+        </aside>
+      </div>
+      <div class="resizer" id="resizer"></div>
+      <div class="output-panel">
+        <div class="output-header">
+          <span class="output-tab">OUTPUT</span>
+          <div class="output-actions">
+            <button class="btn-icon" id="clear-output" title="Clear">⌫</button>
+          </div>
+        </div>
+        <div class="output-content" id="output">
+          <div class="output-placeholder">Press ▶ Run or ⌘+Enter to execute your code.</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Right tool rail -->
+    <nav class="rail" id="rail">
+      <button class="rail-btn" id="desc-toggle" title="Description">📋</button>
+      <button class="rail-btn" id="hints-toggle" title="Hints">💡</button>
+      <button class="rail-btn" id="viz-btn" title="Visualizer" style="display:none">▷</button>
+      <div class="rail-sep"></div>
+      <button class="rail-btn" id="scratch-toggle" title="Scratchpad — sketch &amp; notes">✎</button>
+      <button class="rail-btn" id="tutor-toggle" title="AI Tutor — runs in your browser">💬</button>
+    </nav>
+
+  </div>
+
+  <!-- Visualizer Overlay -->
+  <div class="viz-overlay" id="viz-overlay">
+    <div class="viz-container">
+      <div class="viz-header">
+        <span class="viz-title" id="viz-title">Algorithm Visualizer</span>
+        <button class="btn btn-ghost viz-close" id="viz-close">✕ Close</button>
+      </div>
+      <div class="viz-body" id="viz-body"></div>
+      <div class="viz-controls">
+        <button class="btn-icon" id="viz-reset" title="Reset">⟲</button>
+        <button class="btn-icon" id="viz-back" title="Step back">◁</button>
+        <button class="btn-icon" id="viz-play" title="Play/Pause">▶</button>
+        <button class="btn-icon" id="viz-forward" title="Step forward">▷</button>
+        <label style="font-size:11px;color:var(--fg-secondary)">Speed</label>
+        <input type="range" class="speed-slider" id="viz-speed" min="100" max="2000" value="800" step="100">
+        <span class="viz-step-label" id="viz-step-label">0 / 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Python engine (Pyodide in a worker) + judging + stats -->
+  <script src="pyengine.js?v=2"></script>
+  <script src="judge.js?v=2"></script>
+  <script src="stats.js?v=3"></script>
+
+  <!-- Visualizer Scripts -->
+  <script src="visualizers/dfs.js"></script>
+  <script src="visualizers/bfs.js"></script>
+  <script src="visualizers/binary-search.js"></script>
+  <script src="visualizers/two-pointers.js"></script>
+  <script src="visualizers/sliding-window.js"></script>
+  <script src="visualizers/backtracking.js"></script>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop" id="settings-modal">
+    <div class="modal">
+      <h3>Appearance</h3>
+      <div class="theme-picker" id="theme-picker">
+        <button class="theme-swatch" data-theme="refined-dark"><span class="sw sw-refined"></span><span>Refined Dark</span></button>
+        <button class="theme-swatch" data-theme="brutalist"><span class="sw sw-brutal"></span><span>Terminal</span></button>
+        <button class="theme-swatch" data-theme="glassy"><span class="sw sw-glass"></span><span>Glassy</span></button>
+        <button class="theme-swatch" data-theme="warm"><span class="sw sw-warm"></span><span>Warm Paper</span></button>
+      </div>
+      <h3>Data Management</h3>
+      <p>Your solutions and progress are saved in this browser's local storage.</p>
+      <div class="settings-stats" id="settings-stats"></div>
+      <div class="settings-actions-grid">
+        <button class="btn" id="export-solutions" title="Download all saved solutions as JSON">Export Solutions</button>
+        <button class="btn" id="import-solutions" title="Import solutions from a JSON file">Import Solutions</button>
+        <button class="btn" id="export-progress" title="Download solved status + solutions together">Export All Data</button>
+        <button class="btn settings-danger" id="clear-all-solutions" title="Delete all saved solutions">Clear All Solutions</button>
+      </div>
+      <h3>AI Tutor</h3>
+      <div class="tutor-settings">
+        <div class="tutor-status" id="tutor-settings-status">AI Tutor model: not downloaded.</div>
+        <button class="btn settings-danger" id="tutor-remove" title="Delete the downloaded tutor model" disabled>Remove tutor model (~1 GB)</button>
+      </div>
+      <input type="file" id="import-file-input" accept=".json" style="display:none">
+      <div class="modal-actions">
+        <button class="btn" id="settings-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-backdrop" id="confirm-modal">
+    <div class="modal">
+      <h3 id="confirm-title">Are you sure?</h3>
+      <p id="confirm-message">This will replace your current code.</p>
+      <div class="modal-actions">
+        <button class="btn" id="confirm-cancel">Cancel</button>
+        <button class="btn btn-primary" id="confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Tutor panel (client-side WebLLM — opt-in) -->
+  <aside class="tutor-panel" id="tutor-panel" data-state="gate">
+    <div class="tutor-head">
+      <span class="tutor-title">💬 AI Tutor <span class="tutor-badge">on-device</span></span>
+      <div class="tutor-head-actions">
+        <button class="btn-icon" id="tutor-clear" title="Clear this chat">⌫</button>
+        <button class="btn-icon" id="tutor-close" title="Close">✕</button>
+      </div>
+    </div>
+
+    <div class="tutor-gate">
+      <p class="tutor-gate-title">Enable the AI Tutor?</p>
+      <p class="tutor-muted">Runs entirely in your browser — private, free, nothing sent to a server.</p>
+      <ul class="tutor-gate-list">
+        <li>One-time <b>~1 GB download</b>, cached on this device</li>
+        <li>Reused on future visits — no re-download</li>
+        <li>Needs WebGPU (Chrome / Edge / Safari 17+)</li>
+        <li>Remove anytime in Settings</li>
+      </ul>
+      <p class="tutor-muted" id="tutor-cache-note"></p>
+      <button class="btn btn-primary" id="tutor-enable">Enable &amp; download</button>
+      <p class="tutor-muted" id="tutor-gate-err"></p>
+    </div>
+
+    <div class="tutor-loading">
+      <p class="tutor-muted" id="tutor-load-text">Preparing…</p>
+      <div class="tutor-bar"><i id="tutor-bar"></i></div>
+    </div>
+
+    <div class="tutor-ready">
+      <div class="tutor-quick" id="tutor-quick">
+        <button data-action="hint">💡 Hint</button>
+        <button data-action="explain">📖 Explain</button>
+        <button data-action="review">🔍 Review</button>
+        <button data-action="pattern">🧩 Pattern</button>
+        <button data-action="complexity">⏱ Complexity</button>
+      </div>
+      <div class="tutor-messages" id="tutor-messages">
+        <div class="tutor-msg ai">Hi! Ask me about the current problem, or any Python question — hints, explanations, complexity, or a quick syntax check.</div>
+      </div>
+      <div class="tutor-input-area">
+        <textarea class="tutor-input" id="tutor-input" placeholder="Ask anything…" rows="1"></textarea>
+        <button class="btn btn-primary" id="tutor-send">↑</button>
+      </div>
+    </div>
+  </aside>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   FreetCode — Main Application Script
+   ══════════════════════════════════════════════════════════════════ */
+
+// ─── State ───
+let editor = null;
+let problems = [];
+let currentProblem = null;
+let currentCollection = 'all';
+const COLLECTIONS = [
+  { id: 'all', label: 'All' },
+  { id: 'blind75', label: 'Blind 75' },
+  { id: 'neetcode150', label: 'NeetCode 150' },
+  { id: 'grind75', label: 'Grind 75' },
+  { id: 'top150', label: 'Top 150' },
+];
+let showingSolution = false;
+let userCode = '';
+let engine = null;
+let pyReady = false;
+let isRunning = false;
+let solvedSet = new Set(JSON.parse(localStorage.getItem('freetcode_solved') || '[]'));
+let savedSolutions = JSON.parse(localStorage.getItem('freetcode_user_solutions') || '{}');
+
+// ─── DOM refs ───
+const app = document.getElementById('app');
+const outputEl = document.getElementById('output');
+const problemListEl = document.getElementById('problem-list');
+const runBtn = document.getElementById('run-btn');
+const submitBtn = document.getElementById('submit-btn');
+const solutionToggle = document.getElementById('solution-toggle');
+
+// ─── Problem content (served per-problem from the Worker/KV, so the full
+//     curriculum is never a single download). Degrades gracefully: network →
+//     localStorage cache → embedded starters. ───
+const CONTENT_BASE = 'https://freetcode-stats.galliard7.workers.dev';
+const fullCache = new Map();   // num -> full problem object (this session)
+
+async function fetchIndex() {
+  try {
+    const r = await fetch(CONTENT_BASE + '/problems/index', { cache: 'no-cache' });
+    if (!r.ok) throw new Error('status ' + r.status);
+    const idx = await r.json();
+    try { localStorage.setItem('freetcode_index', JSON.stringify(idx)); } catch (_) {}
+    return idx;
+  } catch (e) {
+    const cached = localStorage.getItem('freetcode_index');
+    if (cached) { try { return JSON.parse(cached); } catch (_) {} }
+    return getStarterProblems();   // offline / first-run fallback (full objects)
+  }
+}
+
+async function getFullProblem(num) {
+  if (fullCache.has(num)) return fullCache.get(num);
+  const lsKey = 'freetcode_p_' + num;
+  try {
+    const r = await fetch(CONTENT_BASE + '/problem/' + num, { cache: 'no-cache' });
+    if (!r.ok) throw new Error('status ' + r.status);
+    const full = await r.json();
+    fullCache.set(num, full);
+    try { localStorage.setItem(lsKey, JSON.stringify(full)); } catch (_) {}
+    return full;
+  } catch (e) {
+    const cached = localStorage.getItem(lsKey);
+    if (cached) { try { const f = JSON.parse(cached); fullCache.set(num, f); return f; } catch (_) {} }
+    return null;
+  }
+}
+
+// ─── Load Problems ───
+async function loadProblems() {
+  problems = await fetchIndex();
+  renderCollectionPills();
+  renderProblemList();
+  // Load last-used problem or default to first
+  const lastId = localStorage.getItem('freetcode_current');
+  const target = problems.find(p => p.num == lastId) || problems[0];
+  if (target) await selectProblem(target);
+}
+
+function getStarterProblems() {
+  return [
+    {
+      num: 1, title: 'Two Sum', difficulty: 'Easy', category: 'Arrays & Hashing',
+      tags: ['Array', 'Hash Table'],
+      template: `class Solution:\n    def twoSum(self, nums, target):\n        # Your code here\n        pass\n\n\nsol = Solution()\nprint(sol.twoSum([2, 7, 11, 15], 9))   # [0, 1]\nprint(sol.twoSum([3, 2, 4], 6))        # [1, 2]\nprint(sol.twoSum([3, 3], 6))           # [0, 1]\n`,
+      solution: `class Solution:\n    def twoSum(self, nums, target):\n        seen = {}\n        for i, n in enumerate(nums):\n            diff = target - n\n            if diff in seen:\n                return [seen[diff], i]\n            seen[n] = i\n\n\nsol = Solution()\nprint(sol.twoSum([2, 7, 11, 15], 9))   # [0, 1]\nprint(sol.twoSum([3, 2, 4], 6))        # [1, 2]\nprint(sol.twoSum([3, 3], 6))           # [0, 1]\n`,
+      hints: [
+        'Think about what complement you need for each number to reach the target.',
+        'Can you use a hash map to store numbers you\'ve already seen?',
+        'For each number, check if (target - number) exists in your hash map. If yes, return both indices.'
+      ]
+    },
+    {
+      num: 217, title: 'Contains Duplicate', difficulty: 'Easy', category: 'Arrays & Hashing',
+      tags: ['Array', 'Hash Table'],
+      template: `class Solution:\n    def containsDuplicate(self, nums):\n        # Your code here\n        pass\n\n\nsol = Solution()\nprint(sol.containsDuplicate([1, 2, 3, 1]))      # True\nprint(sol.containsDuplicate([1, 2, 3, 4]))      # False\n`,
+      solution: `class Solution:\n    def containsDuplicate(self, nums):\n        return len(nums) != len(set(nums))\n\n\nsol = Solution()\nprint(sol.containsDuplicate([1, 2, 3, 1]))      # True\nprint(sol.containsDuplicate([1, 2, 3, 4]))      # False\n`,
+      hints: [
+        'What data structure gives you O(1) lookup to check if you\'ve seen an element before?',
+        'A set automatically removes duplicates. Compare lengths.',
+        'Alternatively, iterate and add to a set — return True the moment you find a duplicate.'
+      ]
+    },
+    {
+      num: 242, title: 'Valid Anagram', difficulty: 'Easy', category: 'Arrays & Hashing',
+      tags: ['Hash Table', 'String', 'Sorting'],
+      template: `class Solution:\n    def isAnagram(self, s, t):\n        # Your code here\n        pass\n\n\nsol = Solution()\nprint(sol.isAnagram("anagram", "nagaram"))   # True\nprint(sol.isAnagram("rat", "car"))           # False\n`,
+      solution: `class Solution:\n    def isAnagram(self, s, t):\n        if len(s) != len(t):\n            return False\n        count = {}\n        for c in s:\n            count[c] = count.get(c, 0) + 1\n        for c in t:\n            count[c] = count.get(c, 0) - 1\n            if count[c] < 0:\n                return False\n        return True\n\n\nsol = Solution()\nprint(sol.isAnagram("anagram", "nagaram"))   # True\nprint(sol.isAnagram("rat", "car"))           # False\n`,
+      hints: [
+        'Anagrams have the same character frequencies.',
+        'Count characters in one string, then subtract counts using the other.',
+        'If any count goes negative or lengths differ, it\'s not an anagram.'
+      ]
+    },
+    {
+      num: 125, title: 'Valid Palindrome', difficulty: 'Easy', category: 'Two Pointers',
+      tags: ['Two Pointers', 'String'],
+      template: `class Solution:\n    def isPalindrome(self, s):\n        # Your code here\n        pass\n\n\nsol = Solution()\nprint(sol.isPalindrome("A man, a plan, a canal: Panama"))   # True\nprint(sol.isPalindrome("race a car"))                       # False\nprint(sol.isPalindrome(" "))                                # True\n`,
+      solution: `class Solution:\n    def isPalindrome(self, s):\n        l, r = 0, len(s) - 1\n        while l < r:\n            while l < r and not s[l].isalnum():\n                l += 1\n            while l < r and not s[r].isalnum():\n                r -= 1\n            if s[l].lower() != s[r].lower():\n                return False\n            l += 1\n            r -= 1\n        return True\n\n\nsol = Solution()\nprint(sol.isPalindrome("A man, a plan, a canal: Panama"))   # True\nprint(sol.isPalindrome("race a car"))                       # False\nprint(sol.isPalindrome(" "))                                # True\n`,
+      hints: [
+        'Only consider alphanumeric characters and ignore case.',
+        'Use two pointers from both ends moving inward.',
+        'Skip non-alphanumeric characters, then compare lowercase versions.'
+      ]
+    },
+    {
+      num: 121, title: 'Best Time to Buy and Sell Stock', difficulty: 'Easy', category: 'Sliding Window',
+      tags: ['Array', 'DP'],
+      template: `class Solution:\n    def maxProfit(self, prices):\n        # Your code here\n        pass\n\n\nsol = Solution()\nprint(sol.maxProfit([7, 1, 5, 3, 6, 4]))   # 5\nprint(sol.maxProfit([7, 6, 4, 3, 1]))      # 0\n`,
+      solution: `class Solution:\n    def maxProfit(self, prices):\n        min_price = float('inf')\n        max_profit = 0\n        for price in prices:\n            min_price = min(min_price, price)\n            max_profit = max(max_profit, price - min_price)\n        return max_profit\n\n\nsol = Solution()\nprint(sol.maxProfit([7, 1, 5, 3, 6, 4]))   # 5\nprint(sol.maxProfit([7, 6, 4, 3, 1]))      # 0\n`,
+      hints: [
+        'You want to buy low and sell high — but you must buy before you sell.',
+        'Track the minimum price seen so far as you iterate.',
+        'At each price, the best profit is current price minus the minimum seen so far.'
+      ]
+    },
+    {
+      num: 20, title: 'Valid Parentheses', difficulty: 'Easy', category: 'Stack',
+      tags: ['Stack', 'String'],
+      template: `class Solution:\n    def isValid(self, s):\n        # Your code here\n        pass\n\n\nsol = Solution()\nprint(sol.isValid("()"))         # True\nprint(sol.isValid("()[]{}"))     # True\nprint(sol.isValid("(]"))         # False\nprint(sol.isValid("{[]}"))       # True\n`,
+      solution: `class Solution:\n    def isValid(self, s):\n        stack = []\n        pairs = {')': '(', ']': '[', '}': '{'}\n        for c in s:\n            if c in pairs:\n                if not stack or stack[-1] != pairs[c]:\n                    return False\n                stack.pop()\n            else:\n                stack.append(c)\n        return len(stack) == 0\n\n\nsol = Solution()\nprint(sol.isValid("()"))         # True\nprint(sol.isValid("()[]{}"))     # True\nprint(sol.isValid("(]"))         # False\nprint(sol.isValid("{[]}"))       # True\n`,
+      hints: [
+        'Use a stack to track opening brackets.',
+        'When you see a closing bracket, check if it matches the top of the stack.',
+        'At the end, the stack should be empty for a valid string.'
+      ]
+    },
+    {
+      num: 704, title: 'Binary Search', difficulty: 'Easy', category: 'Binary Search',
+      tags: ['Binary Search', 'Array'],
+      template: `class Solution:\n    def search(self, nums, target):\n        # Your code here\n        pass\n\n\nsol = Solution()\nprint(sol.search([-1, 0, 3, 5, 9, 12], 9))    # 4\nprint(sol.search([-1, 0, 3, 5, 9, 12], 2))    # -1\n`,
+      solution: `class Solution:\n    def search(self, nums, target):\n        l, r = 0, len(nums) - 1\n        while l <= r:\n            mid = (l + r) // 2\n            if nums[mid] == target:\n                return mid\n            elif nums[mid] < target:\n                l = mid + 1\n            else:\n                r = mid - 1\n        return -1\n\n\nsol = Solution()\nprint(sol.search([-1, 0, 3, 5, 9, 12], 9))    # 4\nprint(sol.search([-1, 0, 3, 5, 9, 12], 2))    # -1\n`,
+      hints: [
+        'The array is sorted — you can eliminate half the search space each step.',
+        'Use two pointers (left, right) and compute mid.',
+        'If nums[mid] < target, search right half. If nums[mid] > target, search left half.'
+      ]
+    },
+    {
+      num: 206, title: 'Reverse Linked List', difficulty: 'Easy', category: 'Linked List',
+      tags: ['Linked List', 'Recursion'],
+      template: `class ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(values):\n    dummy = ListNode()\n    curr = dummy\n    for v in values:\n        curr.next = ListNode(v); curr = curr.next\n    return dummy.next\n\ndef show(head):\n    out = []\n    while head:\n        out.append(head.val); head = head.next\n    print(out)\n\n\nclass Solution:\n    def reverseList(self, head):\n        # Your code here\n        pass\n\n\nsol = Solution()\nshow(sol.reverseList(build([1, 2, 3, 4, 5])))   # [5, 4, 3, 2, 1]\nshow(sol.reverseList(build([1, 2])))            # [2, 1]\n`,
+      solution: `class ListNode:\n    def __init__(self, val=0, next=None):\n        self.val = val\n        self.next = next\n\ndef build(values):\n    dummy = ListNode()\n    curr = dummy\n    for v in values:\n        curr.next = ListNode(v); curr = curr.next\n    return dummy.next\n\ndef show(head):\n    out = []\n    while head:\n        out.append(head.val); head = head.next\n    print(out)\n\n\nclass Solution:\n    def reverseList(self, head):\n        prev = None\n        curr = head\n        while curr:\n            nxt = curr.next\n            curr.next = prev\n            prev = curr\n            curr = nxt\n        return prev\n\n\nsol = Solution()\nshow(sol.reverseList(build([1, 2, 3, 4, 5])))   # [5, 4, 3, 2, 1]\nshow(sol.reverseList(build([1, 2])))            # [2, 1]\n`,
+      hints: [
+        'You need to reverse the direction of each pointer.',
+        'Keep track of three nodes: prev, curr, and next.',
+        'At each step: save next, point curr.next to prev, advance prev and curr.'
+      ]
+    },
+  ];
+}
+
+// ─── Category order (NeetCode roadmap) ───
+const CATEGORY_ORDER = [
+  'Algorithms', // learn-first reference implementations
+  'Arrays & Hashing', 'Two Pointers', 'Sliding Window', 'Stack',
+  'Binary Search', 'Linked List', 'Trees', 'Tries',
+  'Heap / Priority Queue', 'Backtracking', 'Graphs', 'Advanced Graphs',
+  '1-D DP', '2-D DP', 'Greedy', 'Intervals',
+  'Math & Geometry', 'Bit Manipulation'
+];
+
+// ─── Render Collection Filter Pills ───
+function renderCollectionPills() {
+  const el = document.getElementById('collection-filter');
+  if (!el) return;
+  const counts = {};
+  for (const c of COLLECTIONS) {
+    counts[c.id] = c.id === 'all'
+      ? problems.filter(p => p.num > 0).length
+      : problems.filter(p => (p.lists || []).includes(c.id)).length;
+  }
+  el.innerHTML = COLLECTIONS.map(c =>
+    `<button class="collection-pill${c.id === currentCollection ? ' active' : ''}" data-coll="${c.id}" title="${c.label}">
+      ${c.label}<span class="collection-pill-count">${counts[c.id]}</span>
+    </button>`
+  ).join('');
+  el.querySelectorAll('.collection-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentCollection = btn.dataset.coll;
+      renderCollectionPills();
+      renderProblemList(document.getElementById('problem-search').value);
+    });
+  });
+}
+
+// ─── Render Problem List ───
+function renderProblemList(filter = '') {
+  const grouped = {};
+  const lowerFilter = filter.toLowerCase();
+  for (const p of problems) {
+    if (currentCollection !== 'all' && !(p.lists || []).includes(currentCollection)) continue;
+    if (filter && !p.title.toLowerCase().includes(lowerFilter) &&
+        !String(p.num).includes(filter) &&
+        !p.category.toLowerCase().includes(lowerFilter) &&
+        !(p.tags || []).some(t => t.toLowerCase().includes(lowerFilter))) continue;
+    if (!grouped[p.category]) grouped[p.category] = [];
+    grouped[p.category].push(p);
+  }
+
+  // Sort categories by roadmap order
+  const sortedCats = Object.keys(grouped).sort((a, b) => {
+    const ia = CATEGORY_ORDER.indexOf(a);
+    const ib = CATEGORY_ORDER.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+
+  let html = '';
+  for (const cat of sortedCats) {
+    const items = grouped[cat];
+    html += `<div class="category-group">
+      <div class="category-header" data-cat="${cat}">
+        <span class="category-chevron">▾</span>
+        <span>${cat}</span>
+        <span class="category-count">${items.length}</span>
+      </div>`;
+    for (const p of items) {
+      const active = currentProblem && currentProblem.num === p.num ? ' active' : '';
+      const solved = solvedSet.has(p.num) ? ' solved' : '';
+      const hasSaved = savedSolutions[p.num] ? ' has-saved' : '';
+      const diff = (p.difficulty || 'Easy').toLowerCase();
+      const numLabel = p.num > 0 ? p.num : '📘';
+      html += `<div class="problem-item${active}${solved}${hasSaved}" data-num="${p.num}">
+        <span class="problem-num">${numLabel}</span>
+        <span class="difficulty-dot ${diff}"></span>
+        <span class="problem-title">${p.title}</span>
+        <span class="saved-indicator" title="Has saved solution">✎</span>
+        <span class="solved-check">✓</span>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  problemListEl.innerHTML = html;
+
+  // Event listeners
+  problemListEl.querySelectorAll('.category-header').forEach(el => {
+    el.addEventListener('click', () => {
+      el.classList.toggle('collapsed');
+      const group = el.parentElement;
+      group.querySelectorAll('.problem-item').forEach(item => {
+        item.style.display = el.classList.contains('collapsed') ? 'none' : '';
+      });
+    });
+  });
+  problemListEl.querySelectorAll('.problem-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const p = problems.find(x => x.num == el.dataset.num);
+      if (p) {
+        selectProblem(p);
+        // Auto-close sidebar on mobile
+        if (isMobile()) {
+          sidebar.classList.remove('mobile-open');
+          sidebarBackdrop.classList.remove('show');
+        }
+      }
+    });
+  });
+
+  updateProgress();
+}
+
+// ─── Select Problem ───
+async function selectProblem(p) {
+  // Index items are lightweight (no body). Fetch the full problem on demand,
+  // merging the body over the list metadata. Already-full objects pass through.
+  if (p && p.solution === undefined && p.template === undefined && p.description === undefined) {
+    const body = await getFullProblem(p.num);
+    if (body) p = { ...p, ...body };
+  }
+  currentProblem = p;
+  window.dispatchEvent(new CustomEvent('oc:problemchange', { detail: p.num }));
+  showingSolution = false;
+  userCode = '';
+  hideComplexity();
+  localStorage.setItem('freetcode_current', p.num);
+
+  // Update toolbar
+  document.getElementById('current-problem-title').textContent = p.num > 0 ? `${p.num}. ${p.title}` : p.title;
+  const diffEl = document.getElementById('current-difficulty');
+  diffEl.style.display = '';
+  diffEl.className = `pill ${(p.difficulty || 'Easy').toLowerCase()}`;
+  diffEl.textContent = p.difficulty || 'Easy';
+
+  const tagsEl = document.getElementById('current-tags');
+  tagsEl.innerHTML = (p.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+  // Show solution picker
+  const picker = document.getElementById('solution-picker');
+  const pickerArrow = document.getElementById('solution-picker-arrow');
+  picker.style.display = p.solution ? '' : 'none';
+  solutionToggle.textContent = 'Show Solution';
+  pickerArrow.style.display = (p.alt_solutions && p.alt_solutions.length) ? '' : 'none';
+  currentSolutionIdx = 0;
+  document.getElementById('solution-dropdown').classList.remove('show');
+
+  // Show submit button and solved button
+  submitBtn.style.display = p.solution ? '' : 'none';
+  const markSolvedBtn = document.getElementById('mark-solved');
+  markSolvedBtn.style.display = '';
+  if (solvedSet.has(p.num)) {
+    markSolvedBtn.textContent = '✓ Solved';
+    markSolvedBtn.style.color = 'var(--easy)';
+    markSolvedBtn.style.borderColor = 'var(--easy)';
+  } else {
+    markSolvedBtn.textContent = '☐ Mark Solved';
+    markSolvedBtn.style.color = '';
+    markSolvedBtn.style.borderColor = '';
+  }
+
+  // Load saved solution or template into editor
+  const savedCode = savedSolutions[p.num];
+  if (editor) {
+    editor.setValue(savedCode || p.template || '');
+    editor.setScrollPosition({ scrollTop: 0 });
+  }
+
+  // Show/hide reset button based on whether saved code exists
+  document.getElementById('reset-code').style.display = savedCode ? '' : 'none';
+
+  // Update active state in list
+  problemListEl.querySelectorAll('.problem-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.num == p.num);
+  });
+
+  // Update description panel content
+  if (p.description) {
+    descContent.innerHTML = renderDescription(p.description);
+  } else {
+    descContent.innerHTML = '<p style="color:var(--fg-muted);font-style:italic">No description available for this problem.</p>';
+  }
+
+  // Update viz button visibility
+  updateVizButton();
+
+  // Clear output
+  clearOutput();
+}
+
+// ─── Solution Toggle + Picker ───
+let currentSolutionIdx = 0; // 0 = primary solution
+
+function getAllSolutions(p) {
+  if (!p) return [];
+  const primary = { label: p.solution_label || 'Solution', code: p.solution, time_complexity: p.time_complexity, space_complexity: p.space_complexity };
+  const alts = (p.alt_solutions || []).map(a => ({ label: a.label, code: a.code, time_complexity: a.time_complexity, space_complexity: a.space_complexity }));
+  return [primary, ...alts];
+}
+
+function showComplexity(sol, problem) {
+  const bar = document.getElementById('complexity-bar');
+  const time = sol.time_complexity || problem.time_complexity;
+  const space = sol.space_complexity || problem.space_complexity;
+  if (time || space) {
+    document.getElementById('complexity-time').textContent = time || '—';
+    document.getElementById('complexity-space').textContent = space || '—';
+    bar.style.display = '';
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function hideComplexity() {
+  document.getElementById('complexity-bar').style.display = 'none';
+}
+
+function showSolution(idx) {
+  if (!currentProblem || !editor) return;
+  const sols = getAllSolutions(currentProblem);
+  if (idx < 0 || idx >= sols.length) return;
+  if (!showingSolution) userCode = editor.getValue();
+  currentSolutionIdx = idx;
+  editor.setValue(sols[idx].code);
+  editor.setScrollPosition({ scrollTop: 0 });
+  const label = sols.length > 1 ? sols[idx].label : 'Solution';
+  solutionToggle.textContent = `Hide: ${label}`;
+  showingSolution = true;
+  showComplexity(sols[idx], currentProblem);
+  document.getElementById('solution-dropdown').classList.remove('show');
+}
+
+solutionToggle.addEventListener('click', () => {
+  if (!currentProblem || !editor) return;
+  if (!showingSolution) {
+    showSolution(currentSolutionIdx);
+  } else {
+    editor.setValue(userCode || currentProblem.template || '');
+    editor.setScrollPosition({ scrollTop: 0 });
+    solutionToggle.textContent = 'Show Solution';
+    showingSolution = false;
+    hideComplexity();
+  }
+});
+
+// Arrow dropdown
+document.getElementById('solution-picker-arrow').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (!currentProblem) return;
+  const dropdown = document.getElementById('solution-dropdown');
+  const sols = getAllSolutions(currentProblem);
+  if (sols.length <= 1) return;
+  // Build dropdown items
+  dropdown.innerHTML = sols.map((s, i) =>
+    `<button class="solution-dropdown-item${i === currentSolutionIdx && showingSolution ? ' active' : ''}" data-idx="${i}">
+      ${s.label}
+    </button>`
+  ).join('');
+  // Position dropdown below the arrow button using fixed positioning
+  const rect = e.currentTarget.getBoundingClientRect();
+  dropdown.style.top = (rect.bottom + 4) + 'px';
+  dropdown.style.left = Math.max(8, rect.left - 160) + 'px';
+  dropdown.classList.toggle('show');
+});
+
+// Dropdown item click
+document.getElementById('solution-dropdown').addEventListener('click', (e) => {
+  const item = e.target.closest('.solution-dropdown-item');
+  if (!item) return;
+  showSolution(parseInt(item.dataset.idx));
+});
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.solution-picker')) {
+    document.getElementById('solution-dropdown').classList.remove('show');
+  }
+});
+
+// ─── Description Panel ───
+const descPanel = document.getElementById('desc-panel');
+const descContent = document.getElementById('desc-content');
+let descVisible = false;
+
+function renderDescription(md) {
+  // Simple markdown-to-HTML: code blocks, inline code, bold, lists, paragraphs
+  let html = md
+    // Code blocks: ```...```
+    .replace(/```([^`]*?)```/gs, (_, code) => `<pre><code>${code.replace(/</g,'&lt;').replace(/>/g,'&gt;').trim()}</code></pre>`)
+    // Inline code: `...`
+    .replace(/`([^`]+)`/g, (_, code) => `<code>${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code>`)
+    // Bold: **...**
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Convert lines to paragraphs/lists
+  const lines = html.split('\n');
+  let out = '';
+  let inList = false;
+  let listType = '';
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (inList) { out += `</${listType}>`; inList = false; }
+      continue;
+    }
+    const olMatch = trimmed.match(/^(\d+)\.\s+(.*)/);
+    const ulMatch = trimmed.match(/^[-*]\s+(.*)/);
+    if (olMatch) {
+      if (!inList || listType !== 'ol') { if (inList) out += `</${listType}>`; out += '<ol>'; inList = true; listType = 'ol'; }
+      out += `<li>${olMatch[2]}</li>`;
+    } else if (ulMatch) {
+      if (!inList || listType !== 'ul') { if (inList) out += `</${listType}>`; out += '<ul>'; inList = true; listType = 'ul'; }
+      out += `<li>${ulMatch[1]}</li>`;
+    } else {
+      if (inList) { out += `</${listType}>`; inList = false; }
+      // Don't wrap <pre> blocks in <p>
+      if (trimmed.startsWith('<pre>') || trimmed.startsWith('</pre>')) {
+        out += trimmed;
+      } else {
+        out += `<p>${trimmed}</p>`;
+      }
+    }
+  }
+  if (inList) out += `</${listType}>`;
+  return out;
+}
+
+function toggleDescription(show) {
+  descVisible = typeof show === 'boolean' ? show : !descVisible;
+  descPanel.style.display = descVisible ? '' : 'none';
+  document.getElementById('desc-toggle').classList.toggle('active', descVisible);
+  if (descVisible && editor) editor.layout();
+}
+
+document.getElementById('desc-toggle').addEventListener('click', () => {
+  toggleDescription();
+});
+document.getElementById('desc-close').addEventListener('click', () => {
+  toggleDescription(false);
+});
+
+// ─── Hints Toggle ───
+document.getElementById('hints-toggle').addEventListener('click', () => {
+  if (!currentProblem || !currentProblem.hints) return;
+  const hints = currentProblem.hints;
+  // Show hints in output panel
+  let html = '<div style="font-family:var(--font-ui);font-size:12px">';
+  html += '<div style="color:var(--fg-strong);font-weight:600;margin-bottom:8px">💡 Hints</div>';
+  hints.forEach((h, i) => {
+    html += `<details style="margin:6px 0;color:var(--fg-primary)"><summary style="cursor:pointer;color:var(--medium)">Hint ${i+1}</summary><div style="padding:6px 0 6px 16px;color:var(--fg-secondary)">${h}</div></details>`;
+  });
+  html += '</div>';
+  outputEl.innerHTML = html;
+});
+
+// ─── Progress ───
+function updateProgress() {
+  const total = problems.length;
+  const done = solvedSet.size;
+  document.getElementById('progress-count').textContent = `${done} / ${total}`;
+  document.getElementById('progress-fill').style.width = total ? `${(done/total)*100}%` : '0%';
+}
+function markSolved(num) {
+  solvedSet.add(num);
+  localStorage.setItem('freetcode_solved', JSON.stringify([...solvedSet]));
+  updateProgress();
+  renderProblemList(document.getElementById('problem-search').value);
+  if (currentProblem && currentProblem.num === num) {
+    const btn = document.getElementById('mark-solved');
+    btn.textContent = '✓ Solved';
+    btn.style.color = 'var(--easy)';
+    btn.style.borderColor = 'var(--easy)';
+  }
+}
+function unmarkSolved(num) {
+  solvedSet.delete(num);
+  localStorage.setItem('freetcode_solved', JSON.stringify([...solvedSet]));
+  updateProgress();
+  renderProblemList(document.getElementById('problem-search').value);
+  if (currentProblem && currentProblem.num === num) {
+    const btn = document.getElementById('mark-solved');
+    btn.textContent = '☐ Mark Solved';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+}
+
+// ─── Mark Solved Button ───
+document.getElementById('mark-solved').addEventListener('click', () => {
+  if (!currentProblem) return;
+  if (solvedSet.has(currentProblem.num)) {
+    unmarkSolved(currentProblem.num);
+  } else {
+    markSolved(currentProblem.num);
+  }
+});
+
+// ─── Keyboard Navigation ───
+document.addEventListener('keydown', (e) => {
+  // Alt+Up/Down to navigate problems
+  if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    e.preventDefault();
+    if (!currentProblem || !problems.length) return;
+    const idx = problems.findIndex(p => p.num === currentProblem.num);
+    const next = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
+    if (next >= 0 && next < problems.length) {
+      selectProblem(problems[next]);
+    }
+  }
+  // Escape to close modals/panels
+  if (e.key === 'Escape') {
+    document.getElementById('viz-overlay').classList.remove('show');
+    document.getElementById('settings-modal').classList.remove('show');
+    document.getElementById('confirm-modal').classList.remove('show');
+  }
+});
+
+// ─── Search ───
+document.getElementById('problem-search').addEventListener('input', (e) => {
+  renderProblemList(e.target.value);
+});
+
+// ─── Sidebar Toggle ───
+const sidebar = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const isMobile = () => window.innerWidth <= 768;
+
+document.getElementById('sidebar-toggle').addEventListener('click', () => {
+  if (isMobile()) {
+    sidebar.classList.toggle('mobile-open');
+    sidebarBackdrop.classList.toggle('show', sidebar.classList.contains('mobile-open'));
+  } else {
+    app.classList.toggle('sidebar-collapsed');
+  }
+});
+sidebarBackdrop.addEventListener('click', () => {
+  sidebar.classList.remove('mobile-open');
+  sidebarBackdrop.classList.remove('show');
+});
+
+// ─── Auto-save Solutions ───
+let saveTimer = null;
+function autoSaveCode() {
+  if (!currentProblem || !editor || showingSolution) return;
+  const code = editor.getValue();
+  const template = currentProblem.template || '';
+  if (code === template || !code.trim()) {
+    delete savedSolutions[currentProblem.num];
+  } else {
+    savedSolutions[currentProblem.num] = code;
+  }
+  localStorage.setItem('freetcode_user_solutions', JSON.stringify(savedSolutions));
+  // Update reset button visibility
+  document.getElementById('reset-code').style.display = savedSolutions[currentProblem.num] ? '' : 'none';
+  // Update sidebar indicator
+  const item = problemListEl.querySelector(`.problem-item[data-num="${currentProblem.num}"]`);
+  if (item) item.classList.toggle('has-saved', !!savedSolutions[currentProblem.num]);
+}
+
+// ─── Reset to Template ───
+document.getElementById('reset-code').addEventListener('click', () => {
+  if (!currentProblem || !editor) return;
+  editor.setValue(currentProblem.template || '');
+  editor.setScrollPosition({ scrollTop: 0 });
+  delete savedSolutions[currentProblem.num];
+  localStorage.setItem('freetcode_user_solutions', JSON.stringify(savedSolutions));
+  document.getElementById('reset-code').style.display = 'none';
+  const item = problemListEl.querySelector(`.problem-item[data-num="${currentProblem.num}"]`);
+  if (item) item.classList.remove('has-saved');
+});
+
+// ─── Settings Modal (Data Management) ───
+document.getElementById('settings-btn').addEventListener('click', () => {
+  const statsEl = document.getElementById('settings-stats');
+  const solCount = Object.keys(savedSolutions).length;
+  const solvedCount = solvedSet.size;
+  statsEl.innerHTML = `<div style="font-size:12px;color:var(--fg-secondary);margin-bottom:12px">${solCount} saved solution${solCount !== 1 ? 's' : ''} · ${solvedCount} problem${solvedCount !== 1 ? 's' : ''} marked solved</div>`;
+  document.getElementById('settings-modal').classList.add('show');
+});
+document.getElementById('settings-close').addEventListener('click', () => {
+  document.getElementById('settings-modal').classList.remove('show');
+});
+
+// ─── Theme Switcher ───
+const THEMES = ['refined-dark', 'brutalist', 'glassy', 'warm'];
+const THEME_SHORT = {
+  'refined-dark': 'Dark', 'brutalist': 'Terminal', 'glassy': 'Glassy', 'warm': 'Paper'
+};
+const THEME_BAR_COLOR = {
+  'refined-dark': '#0b0d12', 'brutalist': '#000000', 'glassy': '#08060f', 'warm': '#f6f1e7'
+};
+const THEME_TO_MONACO = {
+  'refined-dark': 'oc-dark', 'brutalist': 'oc-brutal', 'glassy': 'oc-glass', 'warm': 'oc-warm'
+};
+function monacoThemeFor(t) { return THEME_TO_MONACO[t] || 'oc-dark'; }
+
+function defineMonacoThemes() {
+  monaco.editor.defineTheme('oc-dark', {
+    base: 'vs-dark', inherit: true, rules: [],
+    colors: { 'editor.background': '#0d1016', 'editorLineNumber.foreground': '#5a6373', 'editor.lineHighlightBackground': '#161b27' }
+  });
+  monaco.editor.defineTheme('oc-brutal', {
+    base: 'vs-dark', inherit: true,
+    rules: [
+      { token: 'keyword', foreground: 'ffcf4a' }, { token: 'string', foreground: '37ff8b' },
+      { token: 'number', foreground: '9b8bff' }, { token: 'comment', foreground: '4a4a42' },
+    ],
+    colors: { 'editor.background': '#000000', 'editorLineNumber.foreground': '#4a4a42', 'editor.lineHighlightBackground': '#0e0e0c', 'editorCursor.foreground': '#37ff8b' }
+  });
+  monaco.editor.defineTheme('oc-glass', {
+    base: 'vs-dark', inherit: true, rules: [],
+    colors: { 'editor.background': '#0c0a18', 'editorLineNumber.foreground': '#6f7496', 'editor.lineHighlightBackground': '#16122a' }
+  });
+  monaco.editor.defineTheme('oc-warm', {
+    base: 'vs', inherit: true,
+    rules: [
+      { token: 'keyword', foreground: '9333a8' }, { token: 'string', foreground: '3f7d3f' },
+      { token: 'number', foreground: 'b45309' }, { token: 'comment', foreground: 'a39684' },
+    ],
+    colors: { 'editor.background': '#fffdf8', 'editorLineNumber.foreground': '#9b9183', 'editor.lineHighlightBackground': '#f3ece0' }
+  });
+}
+
+function setTheme(name) {
+  if (THEMES.indexOf(name) < 0) name = 'refined-dark';
+  document.documentElement.dataset.theme = name;
+  localStorage.setItem('freetcode_theme', name);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', THEME_BAR_COLOR[name]);
+  if (window.monaco && editor) monaco.editor.setTheme(monacoThemeFor(name));
+  document.querySelectorAll('.theme-swatch').forEach(b => b.classList.toggle('active', b.dataset.theme === name));
+  const cycLabel = document.getElementById('theme-cycle-label');
+  if (cycLabel) cycLabel.textContent = THEME_SHORT[name];
+}
+
+// header quick-cycle button
+document.getElementById('theme-cycle').addEventListener('click', () => {
+  const cur = document.documentElement.dataset.theme || 'refined-dark';
+  const i = THEMES.indexOf(cur);
+  setTheme(THEMES[(i + 1) % THEMES.length]);
+});
+
+document.getElementById('theme-picker').addEventListener('click', (e) => {
+  const btn = e.target.closest('.theme-swatch');
+  if (btn) setTheme(btn.dataset.theme);
+});
+// reflect current theme in the picker on load
+setTheme(document.documentElement.dataset.theme || 'refined-dark');
+
+document.getElementById('export-solutions').addEventListener('click', () => {
+  downloadJSON({ solutions: savedSolutions }, 'freetcode-solutions.json');
+});
+document.getElementById('export-progress').addEventListener('click', () => {
+  downloadJSON({ solutions: savedSolutions, solved: [...solvedSet] }, 'freetcode-all-data.json');
+});
+document.getElementById('import-solutions').addEventListener('click', () => {
+  document.getElementById('import-file-input').click();
+});
+document.getElementById('import-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.solutions && typeof data.solutions === 'object') {
+        Object.assign(savedSolutions, data.solutions);
+        localStorage.setItem('freetcode_user_solutions', JSON.stringify(savedSolutions));
+      }
+      if (Array.isArray(data.solved)) {
+        data.solved.forEach(n => solvedSet.add(n));
+        localStorage.setItem('freetcode_solved', JSON.stringify([...solvedSet]));
+      }
+      renderProblemList(document.getElementById('problem-search').value);
+      if (currentProblem) selectProblem(currentProblem);
+      alert(`Imported successfully.`);
+    } catch (err) {
+      alert('Invalid file format.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+document.getElementById('clear-all-solutions').addEventListener('click', () => {
+  if (!confirm('Delete all saved solutions? This cannot be undone.')) return;
+  savedSolutions = {};
+  localStorage.setItem('freetcode_user_solutions', '{}');
+  renderProblemList(document.getElementById('problem-search').value);
+  if (currentProblem) selectProblem(currentProblem);
+});
+
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Visualizer ───
+const VIZ_MAP = {
+  'Trees': 'dfs',
+  'Graphs': 'bfs',
+  'Advanced Graphs': 'bfs',
+  'Binary Search': 'binary-search',
+  'Two Pointers': 'two-pointers',
+  'Sliding Window': 'sliding-window',
+  'Backtracking': 'backtracking',
+};
+const VIZ_TAG_MAP = {
+  'DFS': 'dfs', 'BFS': 'bfs', 'Binary Search': 'binary-search',
+  'Two Pointers': 'two-pointers', 'Sliding Window': 'sliding-window',
+  'Backtracking': 'backtracking',
+};
+let activeViz = null;
+
+function getVizForProblem(p) {
+  if (!p) return null;
+  // Direct visualizer link on the problem entry
+  if (p.visualizer && window.VIZ_REGISTRY && window.VIZ_REGISTRY[p.visualizer]) return p.visualizer;
+  // Check tags for more specific match
+  for (const tag of (p.tags || [])) {
+    if (VIZ_TAG_MAP[tag]) return VIZ_TAG_MAP[tag];
+  }
+  return VIZ_MAP[p.category] || null;
+}
+
+function updateVizButton() {
+  const vizBtn = document.getElementById('viz-btn');
+  const vizId = getVizForProblem(currentProblem);
+  vizBtn.style.display = vizId ? '' : 'none';
+}
+
+document.getElementById('viz-btn').addEventListener('click', () => {
+  const vizId = getVizForProblem(currentProblem);
+  if (!vizId || !window.VIZ_REGISTRY || !window.VIZ_REGISTRY[vizId]) return;
+  activeViz = window.VIZ_REGISTRY[vizId];
+  document.getElementById('viz-title').textContent = activeViz.getTitle();
+  document.getElementById('viz-overlay').classList.add('show');
+  activeViz.init(document.getElementById('viz-body'));
+  document.getElementById('viz-step-label').textContent = `1 / ${activeViz.getStepCount()}`;
+});
+document.getElementById('viz-close').addEventListener('click', () => {
+  if (activeViz) activeViz.stop();
+  document.getElementById('viz-overlay').classList.remove('show');
+  activeViz = null;
+});
+document.getElementById('viz-play').addEventListener('click', () => {
+  if (!activeViz) return;
+  if (activeViz.isPlaying()) { activeViz.stop(); }
+  else { activeViz.play(); }
+});
+document.getElementById('viz-back').addEventListener('click', () => { if (activeViz) activeViz.step(-1); });
+document.getElementById('viz-forward').addEventListener('click', () => { if (activeViz) activeViz.step(1); });
+document.getElementById('viz-reset').addEventListener('click', () => { if (activeViz) activeViz.reset(); });
+document.getElementById('viz-speed').addEventListener('input', (e) => { if (activeViz) activeViz.setSpeed(2100 - parseInt(e.target.value)); });
+
+// ─── Output Helpers ───
+function clearOutput() {
+  outputEl.innerHTML = '<div class="output-placeholder">Press ▶ Run or ⌘+Enter to execute your code.</div>';
+}
+function appendOutput(text, cls = 'out-line') {
+  if (outputEl.querySelector('.output-placeholder')) outputEl.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = cls;
+  div.textContent = text;
+  outputEl.appendChild(div);
+  outputEl.scrollTop = outputEl.scrollHeight;
+}
+document.getElementById('clear-output').addEventListener('click', clearOutput);
+
+// ─── Pyodide Runtime ───
+const pyBanner = document.getElementById('py-loading-banner');
+const pyBannerText = document.getElementById('py-loading-text');
+
+function showPyBanner(text, isError) {
+  pyBanner.style.display = 'flex';
+  pyBannerText.textContent = text;
+  document.getElementById('py-spinner').style.display = isError ? 'none' : 'inline-block';
+  if (isError) {
+    pyBanner.style.background = 'rgba(239,68,68,0.1)';
+    pyBanner.style.borderTopColor = 'rgba(239,68,68,0.3)';
+    pyBannerText.style.color = '#f87171';
+  }
+}
+function hidePyBanner() { pyBanner.style.display = 'none'; }
+
+// ─── Python Engine (Pyodide runs in a worker; main thread can kill a hang) ───
+function setBusy(btn, label) { btn.disabled = true; btn.innerHTML = label; }
+
+// engine.onReady handler — fires on first boot AND after every respawn/reset.
+function onEngineReady() {
+  pyReady = true;
+  runBtn.disabled = false;
+  runBtn.innerHTML = '▶ Run <kbd>⌘↵</kbd>';
+  if (currentProblem && currentProblem.solution) submitBtn.disabled = false;
+  submitBtn.innerHTML = '✓ Submit <kbd>⌘⇧↵</kbd>';
+  pyBanner.style.cursor = '';
+  pyBanner.onclick = null;
+  hidePyBanner();
+}
+
+function initEngine() {
+  runBtn.innerHTML = '⏳ Loading...';
+  showPyBanner('Downloading Python runtime (~15 MB)... this may take a moment on mobile.', false);
+  engine = new PyEngine();
+  engine.onOutput = (text, stream) => appendOutput(text, stream === 'stderr' ? 'out-err' : 'out-line');
+  engine.onReady = onEngineReady;
+  engine.onInitError = () => {
+    showPyBanner('Python failed to load. Tap here to retry.', true);
+    runBtn.innerHTML = '✗ Retry';
+    runBtn.disabled = false;
+    pyBanner.style.cursor = 'pointer';
+    pyBanner.onclick = retryEngine;
+    runBtn.onclick = retryEngine;
+  };
+}
+
+function retryEngine() {
+  pyBanner.onclick = null;
+  runBtn.onclick = runCode;
+  runBtn.disabled = true;
+  pyReady = false;
+  runBtn.innerHTML = '⏳ Loading...';
+  showPyBanner('Retrying Python runtime…', false);
+  engine.reset('retry');
+}
+
+// After a timeout reset the worker respawns and re-emits 'ready' (→ onEngineReady).
+function awaitRestart(activeBtn) {
+  pyReady = false;
+  runBtn.disabled = true;
+  submitBtn.disabled = true;
+  if (activeBtn) activeBtn.innerHTML = '⏳ Restarting…';
+  showPyBanner('Restarting Python runtime…', false);
+}
+
+// ─── Run (unjudged scratchpad) ───
+async function runCode() {
+  if (!pyReady || !editor || isRunning) return;
+  isRunning = true;
+  setBusy(runBtn, '⏳ Running...');
+  submitBtn.disabled = true;
+  if (outputEl.querySelector('.output-placeholder')) outputEl.innerHTML = '';
+  const code = editor.getValue();
+  const t0 = performance.now();
+  try {
+    const r = await engine.run(code);
+    const ms = (performance.now() - t0).toFixed(1);
+    appendOutput(r.error ? `✗ Error after ${ms}ms` : `✓ Finished in ${ms}ms`, 'out-meta');
+  } catch (e) {
+    if (e.timeout) appendOutput('✗ Stopped after 10s — possible infinite loop. The Python runtime was reset.', 'out-err');
+    else appendOutput('✗ ' + (e.message || e), 'out-err');
+  } finally {
+    isRunning = false;
+    if (engine.ready) onEngineReady();
+    else awaitRestart(runBtn);
+  }
+}
+
+// ─── Resizer ───
+const resizer = document.getElementById('resizer');
+let resizing = false;
+resizer.addEventListener('mousedown', (e) => {
+  resizing = true;
+  resizer.classList.add('dragging');
+  document.addEventListener('mousemove', onResize);
+  document.addEventListener('mouseup', () => {
+    resizing = false;
+    resizer.classList.remove('dragging');
+    document.removeEventListener('mousemove', onResize);
+  }, { once: true });
+});
+function onResize(e) {
+  if (!resizing) return;
+  const mainEl = document.getElementById('main');
+  const editorEl = document.querySelector('.editor-container');
+  const outputEl2 = document.querySelector('.output-panel');
+  const rect = mainEl.getBoundingClientRect();
+  // Calculate available space (main height minus toolbar, desc panel, resizer)
+  const toolbar = document.querySelector('.toolbar');
+  const descPanel2 = document.getElementById('desc-panel');
+  const fixedH = toolbar.offsetHeight + (descPanel2.style.display !== 'none' ? descPanel2.offsetHeight : 0) + 6;
+  const available = rect.height - fixedH;
+  const y = e.clientY - rect.top - fixedH + 6;
+  const outputH = Math.max(80, Math.min(available - 120, available - y));
+  outputEl2.style.height = outputH + 'px';
+  if (editor) editor.layout();
+}
+
+// ─── Monaco Editor ───
+async function initEditor() {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js';
+    s.onload = () => {
+      window.require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+      window.require(['vs/editor/editor.main'], () => {
+        defineMonacoThemes();
+        editor = monaco.editor.create(document.getElementById('editor'), {
+          value: '# Select a problem from the sidebar to begin\n',
+          language: 'python',
+          theme: monacoThemeFor(document.documentElement.dataset.theme),
+          fontFamily: "'JetBrains Mono', 'Cascadia Code', monospace",
+          fontSize: 14,
+          fontLigatures: true,
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          automaticLayout: true,
+          padding: { top: 12 },
+          tabSize: 4,
+          insertSpaces: true,
+          renderLineHighlight: 'line',
+          smoothScrolling: true,
+          cursorSmoothCaretAnimation: 'on',
+          bracketPairColorization: { enabled: true },
+          contextmenu: false,
+        });
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, runCode);
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter, submitCode);
+        editor.onDidChangeModelContent(() => {
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(autoSaveCode, 800);
+        });
+        resolve();
+      });
+    };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// ─── Run Button ───
+runBtn.addEventListener('click', runCode);
+
+// ─── Submit (graded: smart-compare correctness + folded-in benchmark) ───
+const SCALED_N = 200000; // default stress size when a problem has no spec.n
+
+async function submitCode() {
+  if (!pyReady || !editor || !currentProblem || isRunning) return;
+  isRunning = true;
+  setBusy(submitBtn, '⏳ Judging...');
+  runBtn.disabled = true;
+  outputEl.innerHTML = '';
+  // Submitting while the reference solution is shown is a test run, not a real
+  // attempt — judge + benchmark it, but never record it as solved.
+  const reviewing = showingSolution;
+  if (reviewing) {
+    outputEl.innerHTML += '<div class="verdict-card v-neutral"><div class="verdict-head">👁 Viewing solution — this Submit is for testing and won\'t be recorded as solved.</div></div>';
+  }
+  const userCode = editor.getValue();
+  const solution = currentProblem.solution;
+  const spec = currentProblem.judge || null;
+
+  try {
+    // 1) Correctness on sample cases (spec smart-compare, else printed-output)
+    const corr = spec
+      ? await engine.judgeSamples(userCode, solution, JSON.stringify(spec))
+      : await engine.judgeStdout(userCode, solution);
+    outputEl.innerHTML += Judge.formatCorrectness(corr);
+
+    const recordStats = !reviewing && Stats.enabled();
+    let verdict = corr.error ? 'error' : (corr.correct ? 'accepted' : 'wrong');
+    let finalScore = null;          // composite (time+space) — drives stats + board
+    let tRatio = null, sRatio = null;
+
+    if (corr.correct) {
+      if (!reviewing) markSolved(currentProblem.num);
+      const specJson = spec ? JSON.stringify(spec) : null;
+
+      if (spec && spec.gen) {
+        // 2) Benchmark across sizes (warm-up + best-of-3 min) → growth curve
+        const baseN = spec.n || SCALED_N;
+        const sizes = [Math.max(2000, Math.round(baseN / 16)), Math.max(4000, Math.round(baseN / 4)), baseN];
+        const points = [];
+        let lastN = null, tle = false, scaleWrong = false, benchErr = null;
+        for (const n of sizes) {
+          try {
+            const r = await engine.judgeBench(userCode, solution, specJson, n, 3);
+            if (!r.ok) { if (!r.unavailable) benchErr = r.error; break; }
+            if (!r.correct) { scaleWrong = true; lastN = n; break; }
+            points.push({ n: r.n, user: r.user_ms, ref: r.ref_ms });
+            tRatio = r.ratio; lastN = r.n;
+          } catch (e) {
+            if (e.timeout) { tle = true; break; }
+            else throw e;
+          }
+        }
+        if (tle) {
+          verdict = 'too_slow';
+          outputEl.innerHTML += Judge.formatBenchmark({ tle: true, n: lastN || sizes[0] });
+        } else if (scaleWrong) {
+          verdict = 'wrong';
+          outputEl.innerHTML += Judge.formatCorrectness({ correct: false, cases: [{ input: 'n=' + lastN.toLocaleString(), expected: '(matches optimal)', got: 'differs at scale', ok: false }] });
+        } else if (benchErr) {
+          outputEl.innerHTML += Judge.formatCorrectness({ error: 'Scaled run: ' + benchErr });
+        } else if (points.length) {
+          // 2b) Space (auxiliary memory) at the largest completed size
+          try {
+            const sp = await engine.judgeSpace(userCode, solution, specJson, lastN);
+            if (sp.ok) sRatio = sp.ratio;
+            var spaceObj = sp.ok ? sp : null;
+          } catch (e) { var spaceObj = null; /* space timeout: skip, keep time */ }
+          const last = points[points.length - 1];
+          finalScore = Judge.composite(tRatio, sRatio);
+          outputEl.innerHTML += Judge.formatBenchmark({
+            timeRatio: tRatio, user_ms: last.user, ref_ms: last.ref, n: lastN,
+            points, space: spaceObj, composite: finalScore, estimated: true, showPercentile: !recordStats,
+          });
+        }
+      } else if (spec) {
+        outputEl.innerHTML += Judge.formatBenchmark({ unavailable: true });
+      } else if (corr.ratio != null) {
+        // spec-less fallback: sample timing only
+        tRatio = corr.ratio; finalScore = corr.ratio;
+        outputEl.innerHTML += Judge.formatBenchmark({ timeRatio: corr.ratio, user_ms: corr.user_ms, ref_ms: corr.ref_ms, composite: corr.ratio, estimated: true, showPercentile: !recordStats });
+      }
+    }
+
+    // 3) Record anonymous stat → rank + unlock + arcade board (score = composite)
+    if (recordStats) {
+      const stat = await Stats.postEvent({ problem: currentProblem.num, verdict, ratio: finalScore });
+      if (stat && verdict === 'accepted' && finalScore != null) {
+        outputEl.innerHTML += Judge.formatRank(stat, finalScore);
+        await maybeArcade(currentProblem.num, finalScore, tRatio, sRatio);
+      }
+    }
+    window.__ocLastVerdict = { problem: currentProblem.num, verdict, score: finalScore, tRatio, sRatio };
+    outputEl.scrollTop = outputEl.scrollHeight;
+  } catch (e) {
+    if (e.timeout) appendOutput('✗ Judging stopped — runtime exceeded the limit and was reset.', 'out-err');
+    else appendOutput('✗ Submit error: ' + (e.message || e), 'out-err');
+  } finally {
+    isRunning = false;
+    if (engine.ready) onEngineReady();
+    else awaitRestart(submitBtn);
+  }
+}
+submitBtn.addEventListener('click', submitCode);
+
+// ─── Arcade board (Phase 4) ───
+async function maybeArcade(problem, score, tRatio, sRatio) {
+  const board = await Stats.getLeaderboard(problem);
+  if (board == null) return; // backend down — skip silently
+  outputEl.innerHTML += Judge.formatBoard(board);
+  const full = board.length >= 20;
+  const qualifies = !full || score < board[board.length - 1].ratio;
+  if (qualifies) showArcadeEntry(problem, score, tRatio, sRatio);
+}
+
+function showArcadeEntry(problem, score, tRatio, sRatio) {
+  const box = document.createElement('div');
+  box.className = 'arcade-entry';
+  box.innerHTML = `<div class="arcade-title">🏆 New high score! Enter initials</div>
+    <div class="arcade-row">
+      <input class="arcade-input" maxlength="3" placeholder="AAA" autocomplete="off" spellcheck="false">
+      <button class="btn btn-primary arcade-save">Save</button>
+    </div>
+    <div class="arcade-msg"></div>`;
+  outputEl.appendChild(box); // appendChild (not innerHTML+=) so the listeners survive
+  const input = box.querySelector('.arcade-input');
+  const btn = box.querySelector('.arcade-save');
+  const msg = box.querySelector('.arcade-msg');
+  input.addEventListener('input', () => { input.value = input.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3); });
+  input.focus();
+  const save = async () => {
+    const ini = input.value;
+    if (ini.length !== 3) { msg.textContent = 'Need 3 letters.'; return; }
+    btn.disabled = true; msg.textContent = 'Saving…';
+    const updated = await Stats.postScore({ problem, initials: ini, ratio: score, t_ratio: tRatio, s_ratio: sRatio });
+    if (updated) box.innerHTML = '<div class="arcade-title">🏆 Saved!</div>' + Judge.formatBoard(updated, ini);
+    else { btn.disabled = false; msg.textContent = 'Could not save (initials may be blocked). Try another.'; }
+  };
+  btn.addEventListener('click', save);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+  outputEl.scrollTop = outputEl.scrollHeight;
+}
+
+// ─── Boot ───
+(async function boot() {
+  await initEditor();
+  await loadProblems();
+  initEngine();
+})();
+
+// ── AI Tutor bridge: expose live app state to tutor.js (separate script) ──
+window.__oc = {
+  get problem() { return currentProblem; },
+  get code() { return editor ? editor.getValue() : ''; },
+  get verdict() { return window.__ocLastVerdict || null; },
+};
+</script>
+<script src="tutor.js?v=4"></script>
+<script src="scratch.js?v=2"></script>
+</body>
+</html>

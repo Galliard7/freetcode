@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreetCode — Glassy SaaS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#eef0fa; --dim:#a9adc9; --mute:#6f7496;
+  --acc:#8b5cf6; --acc2:#ec4899; --acc3:#22d3ee;
+  --easy:#34d399; --med:#fbbf24; --hard:#fb7185;
+  --glass:rgba(22,24,42,.55); --glass-2:rgba(30,32,54,.55);
+  --gline:rgba(255,255,255,.10); --gline2:rgba(255,255,255,.16);
+  --ui:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--ui);font-size:13px;color:var(--ink);-webkit-font-smoothing:antialiased;letter-spacing:-.01em;overflow:hidden}
+body{background:#08060f;position:relative}
+/* aurora background */
+body::before{content:"";position:fixed;inset:-20%;z-index:0;background:
+  radial-gradient(50% 50% at 12% 8%,rgba(139,92,246,.45),transparent 60%),
+  radial-gradient(45% 45% at 88% 18%,rgba(236,72,153,.30),transparent 60%),
+  radial-gradient(55% 55% at 75% 92%,rgba(34,211,238,.25),transparent 60%),
+  radial-gradient(40% 40% at 25% 85%,rgba(99,102,241,.30),transparent 60%);
+  filter:blur(40px);animation:drift 18s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(0,-3%,0) scale(1.05)}}
+.app{position:relative;z-index:1;display:grid;grid-template-rows:60px 1fr;grid-template-columns:300px 1fr;height:100vh;padding:14px;gap:14px}
+.glass{background:var(--glass);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);border:1px solid var(--gline);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.10) inset}
+/* header */
+.header{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:0 20px}
+.logo{display:flex;align-items:center;gap:11px;font-weight:700;font-size:16px}
+.logo-mark{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 6px 20px rgba(139,92,246,.55),0 1px 0 rgba(255,255,255,.4) inset}
+.logo b{background:linear-gradient(90deg,#fff,#d6c8ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.sp{flex:1}
+.h-actions{display:flex;gap:8px}
+.btn{font-family:var(--ui);font-size:12.5px;font-weight:500;color:var(--dim);background:rgba(255,255,255,.05);border:1px solid var(--gline);border-radius:11px;padding:9px 14px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:.18s}
+.btn:hover{color:#fff;background:rgba(255,255,255,.10);border-color:var(--gline2)}
+.btn.primary{background:linear-gradient(135deg,var(--acc),#7c3aed);color:#fff;font-weight:600;border:none;box-shadow:0 6px 22px rgba(139,92,246,.55),0 1px 0 rgba(255,255,255,.35) inset}
+.btn.primary:hover{filter:brightness(1.08)}
+kbd{font-family:var(--mono);font-size:10px;background:rgba(255,255,255,.18);padding:2px 6px;border-radius:5px;margin-left:4px}
+/* sidebar */
+.sidebar{display:flex;flex-direction:column;overflow:hidden}
+.sb-head{padding:18px 18px 12px;display:flex;align-items:baseline;justify-content:space-between}
+.sb-head b{font-weight:700;font-size:14px}
+.sb-head span{font-family:var(--mono);font-size:11px;color:var(--mute);background:rgba(255,255,255,.06);padding:3px 9px;border-radius:20px}
+.search{margin:0 16px 12px;position:relative}
+.search input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--gline);border-radius:12px;padding:10px 12px 10px 34px;color:var(--ink);font-family:var(--ui);font-size:12.5px;outline:none}
+.search input::placeholder{color:var(--mute)}
+.search input:focus{border-color:rgba(139,92,246,.7);box-shadow:0 0 0 4px rgba(139,92,246,.2)}
+.search .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mute)}
+.list{flex:1;overflow-y:auto;padding:2px 10px 14px}
+.grp{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:14px 8px 7px;display:flex;justify-content:space-between}
+.row{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px;cursor:pointer;color:var(--dim);transition:.14s}
+.row:hover{background:rgba(255,255,255,.06);color:#fff}
+.row.active{background:linear-gradient(135deg,rgba(139,92,246,.30),rgba(236,72,153,.15));border:1px solid rgba(139,92,246,.4);color:#fff;box-shadow:0 4px 18px rgba(139,92,246,.25)}
+.row .num{font-family:var(--mono);font-size:11px;color:var(--mute);min-width:28px}
+.row.active .num{color:#c4b5fd}
+.row .nm{flex:1;font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:50%;box-shadow:0 0 8px currentColor}
+.de{background:var(--easy);color:var(--easy)}.dm{background:var(--med);color:var(--med)}.dh{background:var(--hard);color:var(--hard)}
+.check{color:var(--easy);font-size:12px}
+.sb-foot{padding:16px 18px;border-top:1px solid var(--gline)}
+.pl{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:9px}
+.pl b{color:#fff;font-family:var(--mono)}
+.bar{height:8px;border-radius:6px;background:rgba(0,0,0,.3);overflow:hidden}
+.bar>div{height:100%;width:38%;border-radius:6px;background:linear-gradient(90deg,var(--acc),var(--acc2),var(--acc3));box-shadow:0 0 14px rgba(139,92,246,.7)}
+/* main */
+.main{display:flex;flex-direction:column;overflow:hidden;padding:0}
+.toolbar{display:flex;align-items:center;gap:13px;padding:16px 20px;border-bottom:1px solid var(--gline)}
+.tb-title{font-weight:700;font-size:16px}
+.pill{font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:4px 11px;border-radius:20px;text-transform:uppercase}
+.pill.easy{color:var(--easy);background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3)}
+.tag{font-size:11px;color:var(--dim);background:rgba(255,255,255,.06);border:1px solid var(--gline);padding:4px 11px;border-radius:20px}
+.tbsp{flex:1}
+.editor-wrap{flex:1;display:flex;overflow:hidden;margin:14px 16px 0;border-radius:14px;background:rgba(8,7,18,.6);border:1px solid var(--gline);box-shadow:0 8px 30px rgba(0,0,0,.4) inset,0 1px 0 rgba(255,255,255,.06) inset}
+.gutter{padding:18px 0;text-align:right;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--mute);min-width:46px;padding-right:14px;user-select:none}
+.code{flex:1;padding:18px 18px 18px 4px;font-family:var(--mono);font-size:12.5px;line-height:1.75;white-space:pre;overflow:auto;tab-size:4}
+.complexity{display:flex;gap:20px;align-items:center;padding:11px 24px;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+.complexity b{color:#c4b5fd;font-weight:600}
+.cx-lbl{color:var(--mute);text-transform:uppercase;letter-spacing:.06em;font-size:10px;font-family:var(--ui);font-weight:700}
+.output{height:200px;display:flex;flex-direction:column;margin:6px 16px 16px;border-radius:14px;background:rgba(8,7,18,.6);border:1px solid var(--gline);overflow:hidden}
+.out-head{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--gline)}
+.out-tab{font-size:10.5px;font-weight:700;letter-spacing:.1em;color:var(--mute)}
+.out-tab.on{color:#c4b5fd}
+.badge{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--easy);background:rgba(52,211,153,.13);border:1px solid rgba(52,211,153,.3);padding:4px 11px;border-radius:20px}
+.out-body{flex:1;padding:14px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.85;overflow:auto}
+.ok{color:var(--easy)}.muted{color:var(--mute)}
+.kw{color:#c4b5fd}.fn{color:#7dd3fc}.bi{color:#5eead4}.str{color:#bef264}.num{color:#fda4af}.op{color:#a5b4fc}.com{color:var(--mute);font-style:italic}.self{color:#fb7185;font-style:italic}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header glass">
+    <div class="logo"><div class="logo-mark">&lt;/&gt;</div><b>FreetCode</b></div>
+    <div class="sp"></div>
+    <div class="h-actions">
+      <button class="btn">▷ Visualize</button>
+      <button class="btn">📋 Description</button>
+      <button class="btn">💡 Hints</button>
+      <button class="btn">⚙</button>
+    </div>
+  </header>
+
+  <aside class="sidebar glass">
+    <div class="sb-head"><b>Problems</b><span>150</span></div>
+    <div class="search"><span class="ic">⌕</span><input placeholder="Search problems…"></div>
+    <div class="list">
+      <div class="grp">Arrays &amp; Hashing <span>9</span></div>
+      <div class="row active"><span class="num">1</span><span class="dot de"></span><span class="nm">Two Sum</span><span class="check">✓</span></div>
+      <div class="row"><span class="num">217</span><span class="dot de"></span><span class="nm">Contains Duplicate</span><span class="check">✓</span></div>
+      <div class="row"><span class="num">242</span><span class="dot de"></span><span class="nm">Valid Anagram</span></div>
+      <div class="row"><span class="num">49</span><span class="dot dm"></span><span class="nm">Group Anagrams</span></div>
+      <div class="row"><span class="num">347</span><span class="dot dm"></span><span class="nm">Top K Frequent Elements</span></div>
+      <div class="row"><span class="num">238</span><span class="dot dm"></span><span class="nm">Product of Array Except Self</span></div>
+      <div class="row"><span class="num">128</span><span class="dot dm"></span><span class="nm">Longest Consecutive Sequence</span></div>
+      <div class="grp">Two Pointers <span>5</span></div>
+      <div class="row"><span class="num">125</span><span class="dot de"></span><span class="nm">Valid Palindrome</span></div>
+      <div class="row"><span class="num">11</span><span class="dot dm"></span><span class="nm">Container With Most Water</span></div>
+      <div class="row"><span class="num">42</span><span class="dot dh"></span><span class="nm">Trapping Rain Water</span></div>
+      <div class="row"><span class="num">15</span><span class="dot dm"></span><span class="nm">3Sum</span></div>
+    </div>
+    <div class="sb-foot">
+      <div class="pl"><span>Progress</span><b>57 / 150</b></div>
+      <div class="bar"><div></div></div>
+    </div>
+  </aside>
+
+  <main class="main glass">
+    <div class="toolbar">
+      <span class="tb-title">Two Sum</span>
+      <span class="pill easy">Easy</span>
+      <span class="tag">Array</span><span class="tag">Hash Table</span>
+      <div class="tbsp"></div>
+      <button class="btn">Show Solution ▾</button>
+      <button class="btn">↺ Reset</button>
+      <button class="btn">✓ Solved</button>
+      <button class="btn primary">▶ Run <kbd>⌘↵</kbd></button>
+    </div>
+
+    <div class="editor-wrap">
+      <div class="gutter">1
+2
+3
+4
+5
+6
+7
+8
+9
+10</div>
+      <div class="code"><span class="kw">class</span> <span class="fn">Solution</span>:
+    <span class="kw">def</span> <span class="fn">twoSum</span>(<span class="self">self</span>, nums: <span class="bi">list</span>[<span class="bi">int</span>], target: <span class="bi">int</span>) <span class="op">-></span> <span class="bi">list</span>[<span class="bi">int</span>]:
+        seen <span class="op">=</span> {}
+        <span class="kw">for</span> i, n <span class="kw">in</span> <span class="bi">enumerate</span>(nums):
+            comp <span class="op">=</span> target <span class="op">-</span> n
+            <span class="kw">if</span> comp <span class="kw">in</span> seen:
+                <span class="kw">return</span> [seen[comp], i]
+            seen[n] <span class="op">=</span> i
+        <span class="kw">return</span> []
+</div>
+    </div>
+
+    <div class="complexity"><span class="cx-lbl">Time</span> <b>O(n)</b> <span class="muted">·</span> <span class="cx-lbl">Space</span> <b>O(n)</b></div>
+
+    <div class="output">
+      <div class="out-head"><span class="out-tab on">OUTPUT</span><span class="badge">✓ 3 / 3 passed · 41ms</span></div>
+      <div class="out-body"><span class="muted">$ python solution.py</span>
+<span class="ok">[0, 1]</span>   <span class="muted"># Expected: [0, 1]</span>
+<span class="ok">[1, 2]</span>   <span class="muted"># Expected: [1, 2]</span>
+<span class="ok">[0, 1]</span>   <span class="muted"># Expected: [0, 1]</span>
+</div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

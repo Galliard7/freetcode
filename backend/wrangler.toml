@@ -1,0 +1,14 @@
+name = "freetcode-stats"
+main = "src/index.js"
+compatibility_date = "2026-06-06"
+
+# Anonymous stats store for FreetCode. No PII; rows tagged by env (v2 = testing).
+[[d1_databases]]
+binding = "opencode_stats"
+database_name = "opencode-stats"
+database_id = "19db1588-f595-44b9-a676-90e3ac04f33a"
+
+# Problem content (curriculum). Served per-problem so the full set is never one download.
+[[kv_namespaces]]
+binding = "PROBLEMS"
+id = "e5314481c9ad4580af70330bf3938850"
