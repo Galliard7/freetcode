@@ -239,7 +239,7 @@ async function handleScore(req, db) {
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
-    const db = env.opencode_stats;
+    const db = env.freetcode_stats;
     const url = new URL(request.url);
     try {
       if (url.pathname === '/' ) return json({ ok: true, service: 'freetcode-stats' });
