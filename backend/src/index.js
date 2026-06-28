@@ -46,6 +46,14 @@ async function kvDoc(ns, key, maxAge) {
   });
 }
 
+// 429 for scrape/abuse throttling (Workers native rate-limit binding).
+function tooMany() {
+  return new Response(JSON.stringify({ error: 'rate limited — slow down' }), {
+    status: 429,
+    headers: { 'Content-Type': 'application/json', 'Retry-After': '60', ...CORS },
+  });
+}
+
 function normEnv(e) { return (e === 'v2' || e === 'dev') ? e : 'prod'; }
 
 function cleanInitials(s) {
@@ -241,19 +249,31 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { headers: CORS });
     const db = env.freetcode_stats;
     const url = new URL(request.url);
+    const ip = request.headers.get('CF-Connecting-IP') || 'anon';
     try {
       if (url.pathname === '/' ) return json({ ok: true, service: 'freetcode-stats' });
       // ── Problem content (KV-backed; never the whole set in one call) ──
-      if (url.pathname === '/problems/index' && request.method === 'GET') return await kvDoc(env.PROBLEMS, 'index', 300);
+      // Rate-limited per IP to throttle bulk scraping of the curriculum.
+      if (url.pathname === '/problems/index' && request.method === 'GET') {
+        if (env.RL_CONTENT && !(await env.RL_CONTENT.limit({ key: ip })).success) return tooMany();
+        return await kvDoc(env.PROBLEMS, 'index', 300);
+      }
       if (url.pathname.startsWith('/problem/') && request.method === 'GET') {
         const num = decodeURIComponent(url.pathname.slice('/problem/'.length));
         if (!/^-?\d+$/.test(num)) return json({ error: 'bad problem id' }, 400);
+        if (env.RL_CONTENT && !(await env.RL_CONTENT.limit({ key: ip })).success) return tooMany();
         return await kvDoc(env.PROBLEMS, 'problem:' + num, 3600);
       }
-      if (url.pathname === '/event' && request.method === 'POST') return await handleEvent(request, db);
+      if (url.pathname === '/event' && request.method === 'POST') {
+        if (env.RL_WRITE && !(await env.RL_WRITE.limit({ key: ip })).success) return tooMany();
+        return await handleEvent(request, db);
+      }
       if (url.pathname === '/stats' && request.method === 'GET') return await handleStats(url, db);
       if (url.pathname === '/leaderboard' && request.method === 'GET') return await handleLeaderboard(url, db);
-      if (url.pathname === '/score' && request.method === 'POST') return await handleScore(request, db);
+      if (url.pathname === '/score' && request.method === 'POST') {
+        if (env.RL_WRITE && !(await env.RL_WRITE.limit({ key: ip })).success) return tooMany();
+        return await handleScore(request, db);
+      }
       return json({ error: 'not found' }, 404);
     } catch (e) {
       return json({ error: e.message || String(e) }, 500);
