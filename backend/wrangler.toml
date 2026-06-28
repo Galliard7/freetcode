@@ -12,3 +12,21 @@ database_id = "655fbd13-9a05-4e65-b66a-c9da6ed8e9a1"
 [[kv_namespaces]]
 binding = "PROBLEMS"
 id = "e5314481c9ad4580af70330bf3938850"
+
+# Per-IP rate limits (native Workers binding; per-location, best-effort).
+# Content: throttles bulk scraping of problems. ~40 fetches/min is far above
+# any human (opens a few/min), but caps a scraper to ~273 in >7 min of bursts.
+[[ratelimits]]
+name = "RL_CONTENT"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 30
+  period = 10
+
+# Writes: anti-spam on stat/score submissions.
+[[ratelimits]]
+name = "RL_WRITE"
+namespace_id = "1002"
+  [ratelimits.simple]
+  limit = 30
+  period = 60
