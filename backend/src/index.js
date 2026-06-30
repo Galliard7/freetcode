@@ -6,6 +6,7 @@
    Routes:
      POST /event       record a Submit; returns this problem's aggregate
      GET  /stats        per-problem aggregates (dashboard)
+     GET  /recent       recent submission stream (dashboard feed; anonymous)
      GET  /leaderboard  arcade AAA board for a problem
      POST /score        submit an AAA score
      GET  /             health
@@ -206,6 +207,17 @@ async function handleStats(url, db) {
   return json({ ok: true, env, totals, problems });
 }
 
+// Recent submission stream for the dashboard feed. Anonymous by construction:
+// returns only problem/verdict/ratio/ts — never client or ip_day.
+async function handleRecent(url, db) {
+  const env = normEnv(url.searchParams.get('env'));
+  const lim = Math.min(50, Math.max(1, Number(url.searchParams.get('limit')) || 20));
+  const rows = await db.prepare(
+    'SELECT problem, verdict, ratio, ts FROM events WHERE env=? ORDER BY ts DESC LIMIT ?'
+  ).bind(env, lim).all();
+  return json({ ok: true, env, events: rows.results || [] });
+}
+
 async function board(db, env, problem) {
   const rows = await db.prepare(
     'SELECT initials, ratio, t_ratio, s_ratio, ts FROM leaderboard WHERE env=? AND problem=? ORDER BY ratio ASC LIMIT ?'
@@ -269,6 +281,7 @@ export default {
         return await handleEvent(request, db);
       }
       if (url.pathname === '/stats' && request.method === 'GET') return await handleStats(url, db);
+      if (url.pathname === '/recent' && request.method === 'GET') return await handleRecent(url, db);
       if (url.pathname === '/leaderboard' && request.method === 'GET') return await handleLeaderboard(url, db);
       if (url.pathname === '/score' && request.method === 'POST') {
         if (env.RL_WRITE && !(await env.RL_WRITE.limit({ key: ip })).success) return tooMany();
