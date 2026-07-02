@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS events (
   ts      INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_env_problem ON events(env, problem);
+-- Recent-activity feed: WHERE env=? ORDER BY ts DESC.
+CREATE INDEX IF NOT EXISTS idx_events_env_ts ON events(env, ts);
+-- First-try + median-tries stats: correlated lookups on (env, problem, client, ts).
+CREATE INDEX IF NOT EXISTS idx_events_env_problem_client_ts ON events(env, problem, client, ts);
 
 -- One row per (client, problem): their BEST slowdown ratio. This is the
 -- distribution behind "Beats X%" and the distinct-solver / unlock count.
