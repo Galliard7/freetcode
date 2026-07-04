@@ -229,6 +229,8 @@
         <p class="tutor-share-note">Off by default. When on, your tutor conversations for a problem — the problem, your code, the chat turns, and any 👍/👎 you give — are sent anonymously to improve the tutor. No account, no identifiers, nothing linkable to you. Ages 13+. Turn off anytime; chats already shared can't be recalled.</p>
         <button class="btn settings-danger" id="tutor-remove" title="Delete the downloaded tutor model" disabled>Remove tutor model (~1 GB)</button>
       </div>
+      <h3>About</h3>
+      <p style="font-size:12px;color:var(--fg-muted);line-height:1.5;margin-top:6px">FreetCode is a free, open-source, non-commercial project — a tongue-in-cheek homage to the coding-interview grind. It is <strong>not affiliated with, endorsed by, or associated with</strong> LeetCode, NeetCode, or any other platform. Names like "Blind 75", "NeetCode 150", and "Grind 75" refer to well-known community problem collections and remain the property of their respective owners. Problem statements are written in our own words.</p>
       <input type="file" id="import-file-input" accept=".json" style="display:none">
       <div class="modal-actions">
         <button class="btn" id="settings-close">Close</button>
@@ -1399,7 +1401,9 @@ async function submitCode() {
       : await engine.judgeStdout(userCode, solution);
     outputEl.innerHTML += Judge.formatCorrectness(corr);
 
-    const recordStats = Stats.enabled();
+    // Concept/visualizer entries (DFS, BFS, …) have num < 0 — practice, not a
+    // graded problem: judge + benchmark them locally, but never record public stats.
+    const recordStats = Stats.enabled() && currentProblem.num > 0;
     let verdict = corr.error ? 'error' : (corr.correct ? 'accepted' : 'wrong');
     let finalScore = null;          // composite (time+space) — drives stats + board
     let tRatio = null, sRatio = null;
