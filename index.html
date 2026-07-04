@@ -12,16 +12,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FreetCode — Free Algorithm Interview Prep</title>
-<meta name="description" content="Free, open-source coding interview prep. 150 NeetCode problems with solutions, interactive algorithm visualizers. No login, no paywall.">
+<meta name="description" content="Free, open-source coding interview prep. Problems from Blind 75, NeetCode 150, Grind 75 and Top 150 — with solutions and interactive visualizers. No login, no paywall.">
+<link rel="canonical" href="https://freetcode.com/">
+<meta property="og:url" content="https://freetcode.com/">
+<meta property="og:type" content="website">
 <meta property="og:title" content="FreetCode — Free Algorithm Interview Prep">
-<meta property="og:description" content="150 NeetCode problems, interactive visualizers. All free, all in your browser.">
+<meta property="og:description" content="Problems from Blind 75, NeetCode 150, Grind 75 and Top 150 — interactive visualizers, all free, all in your browser.">
+<meta property="og:image" content="https://freetcode.com/assets/share-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FreetCode — Free Algorithm Interview Prep">
+<meta name="twitter:description" content="Problems from Blind 75, NeetCode 150, Grind 75 and Top 150 — interactive visualizers, all free, all in your browser.">
+<meta name="twitter:image" content="https://freetcode.com/assets/share-card.png">
 <meta name="theme-color" content="#6366f1">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50' font-weight='800' fill='white'>&lt;/&gt;</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=3">
 <link rel="stylesheet" href="themes.css?v=2">
-<link rel="stylesheet" href="tutor.css?v=2">
+<link rel="stylesheet" href="tutor.css?v=3">
 <link rel="stylesheet" href="scratch.css?v=1">
 <script>
   // Apply saved theme before paint to avoid flash of wrong skin
@@ -185,7 +193,7 @@
   <!-- Python engine (Pyodide in a worker) + judging + stats -->
   <script src="pyengine.js?v=2"></script>
   <script src="judge.js?v=2"></script>
-  <script src="stats.js?v=3"></script>
+  <script src="stats.js?v=4"></script>
 
   <!-- Visualizer Scripts -->
   <script src="visualizers/dfs.js"></script>
@@ -217,6 +225,8 @@
       <h3>AI Tutor</h3>
       <div class="tutor-settings">
         <div class="tutor-status" id="tutor-settings-status">AI Tutor model: not downloaded.</div>
+        <label class="tutor-share-row"><input type="checkbox" id="tutor-share"> <span>Help improve the tutor — share chats anonymously</span></label>
+        <p class="tutor-share-note">Off by default. When on, your tutor conversations for a problem — the problem, your code, the chat turns, and any 👍/👎 you give — are sent anonymously to improve the tutor. No account, no identifiers, nothing linkable to you. Ages 13+. Turn off anytime; chats already shared can't be recalled.</p>
         <button class="btn settings-danger" id="tutor-remove" title="Delete the downloaded tutor model" disabled>Remove tutor model (~1 GB)</button>
       </div>
       <input type="file" id="import-file-input" accept=".json" style="display:none">
@@ -250,7 +260,7 @@
 
     <div class="tutor-gate">
       <p class="tutor-gate-title">Enable the AI Tutor?</p>
-      <p class="tutor-muted">Runs entirely in your browser — private, free, nothing sent to a server.</p>
+      <p class="tutor-muted">Runs entirely in your browser — private, free. Nothing is sent anywhere unless you turn on chat sharing in Settings (off by default).</p>
       <ul class="tutor-gate-list">
         <li>One-time <b>~1 GB download</b>, cached on this device</li>
         <li>Reused on future visits — no re-download</li>
@@ -326,23 +336,45 @@ const fullCache = new Map();   // num -> full problem object (this session)
 
 async function fetchIndex() {
   try {
-    const r = await fetch(CONTENT_BASE + '/problems/index', { cache: 'no-cache' });
+    const r = await fetch(CONTENT_BASE + '/problems/index');
     if (!r.ok) throw new Error('status ' + r.status);
     const idx = await r.json();
     try { localStorage.setItem('freetcode_index', JSON.stringify(idx)); } catch (_) {}
     return idx;
   } catch (e) {
     const cached = localStorage.getItem('freetcode_index');
-    if (cached) { try { return JSON.parse(cached); } catch (_) {} }
+    if (cached) {
+      try {
+        const idx = JSON.parse(cached);
+        showContentNotice('Content server unreachable — showing problems saved on this device.');
+        return idx;
+      } catch (_) {}
+    }
+    showContentNotice('Content server unreachable — showing a built-in starter set. Retry later for the full list.');
     return getStarterProblems();   // offline / first-run fallback (full objects)
   }
+}
+
+// B2: the fallback chain is silent by design; this one small note keeps it honest.
+function showContentNotice(msg) {
+  if (document.getElementById('content-notice')) return;
+  const el = document.createElement('div');
+  el.id = 'content-notice';
+  el.style.cssText = 'position:fixed;bottom:12px;left:12px;z-index:60;background:var(--bg-base,#0b0d12);border:1px solid var(--border-strong,#232a38);color:var(--fg-muted,#8a93a6);padding:8px 12px;border-radius:8px;font-size:12px;max-width:320px;display:flex;gap:8px;align-items:center';
+  const txt = document.createElement('span'); txt.textContent = msg;
+  const x = document.createElement('button');
+  x.textContent = '✕';
+  x.style.cssText = 'background:none;border:none;color:inherit;cursor:pointer;font-size:12px;padding:0';
+  x.addEventListener('click', () => el.remove());
+  el.appendChild(txt); el.appendChild(x);
+  document.body.appendChild(el);
 }
 
 async function getFullProblem(num) {
   if (fullCache.has(num)) return fullCache.get(num);
   const lsKey = 'freetcode_p_' + num;
   try {
-    const r = await fetch(CONTENT_BASE + '/problem/' + num, { cache: 'no-cache' });
+    const r = await fetch(CONTENT_BASE + '/problem/' + num);
     if (!r.ok) throw new Error('status ' + r.status);
     const full = await r.json();
     fullCache.set(num, full);
@@ -740,12 +772,19 @@ const descContent = document.getElementById('desc-content');
 let descVisible = false;
 
 function renderDescription(md) {
-  // Simple markdown-to-HTML: code blocks, inline code, bold, lists, paragraphs
+  // SECURITY: escape ALL HTML entities up front so nothing in the source text
+  // can inject markup or event handlers (e.g. <img onerror>). Content is
+  // maintainer-authored via KV, but this render path must not be a second trust
+  // hole — the markdown transforms below add only the tags we generate.
+  // (Found by freetcode-qa-security SEC-XSS-04, 2026-07-04.)
+  md = String(md).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Simple markdown-to-HTML: code blocks, inline code, bold, lists, paragraphs.
+  // (< > inside the source are already escaped above, so code spans just trim.)
   let html = md
     // Code blocks: ```...```
-    .replace(/```([^`]*?)```/gs, (_, code) => `<pre><code>${code.replace(/</g,'&lt;').replace(/>/g,'&gt;').trim()}</code></pre>`)
+    .replace(/```([^`]*?)```/gs, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
     // Inline code: `...`
-    .replace(/`([^`]+)`/g, (_, code) => `<code>${code.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code>`)
+    .replace(/`([^`]+)`/g, (_, code) => `<code>${code}</code>`)
     // Bold: **...**
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   // Convert lines to paragraphs/lists
@@ -799,11 +838,15 @@ document.getElementById('desc-close').addEventListener('click', () => {
 document.getElementById('hints-toggle').addEventListener('click', () => {
   if (!currentProblem || !currentProblem.hints) return;
   const hints = currentProblem.hints;
+  // SECURITY: escape hint text before it enters innerHTML — same trust-hole class
+  // as renderDescription (freetcode-qa-security SEC-XSS-04, 2026-07-04). Hints are
+  // plain text, so a straight entity-escape is lossless.
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   // Show hints in output panel
   let html = '<div style="font-family:var(--font-ui);font-size:12px">';
   html += '<div style="color:var(--fg-strong);font-weight:600;margin-bottom:8px">💡 Hints</div>';
   hints.forEach((h, i) => {
-    html += `<details style="margin:6px 0;color:var(--fg-primary)"><summary style="cursor:pointer;color:var(--medium)">Hint ${i+1}</summary><div style="padding:6px 0 6px 16px;color:var(--fg-secondary)">${h}</div></details>`;
+    html += `<details style="margin:6px 0;color:var(--fg-primary)"><summary style="cursor:pointer;color:var(--medium)">Hint ${i+1}</summary><div style="padding:6px 0 6px 16px;color:var(--fg-secondary)">${esc(h)}</div></details>`;
   });
   html += '</div>';
   outputEl.innerHTML = html;
@@ -1446,9 +1489,10 @@ window.__oc = {
   get problem() { return currentProblem; },
   get code() { return editor ? editor.getValue() : ''; },
   get verdict() { return window.__ocLastVerdict || null; },
+  get busy() { return isRunning; },   // resource guard: tutor defers to the judge
 };
 </script>
-<script src="tutor.js?v=4"></script>
+<script src="tutor.js?v=5"></script>
 <script src="scratch.js?v=2"></script>
 <!-- Cloudflare Web Analytics — privacy-first, no cookies. Replace the token below
      with the one from your CF dashboard (Web Analytics → Add a site → Manage site). -->

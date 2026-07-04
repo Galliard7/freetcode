@@ -4,8 +4,9 @@
 /* ══════════════════════════════════════════════════════════════════
    FreetCode — Python Engine (main-thread client for worker.js)
    Owns the Pyodide worker, streams output, and enforces a hard timeout
-   by terminating + respawning the worker (the only way to kill a hung
-   Python loop without SharedArrayBuffer, which GitHub Pages can't enable).
+   by terminating + respawning the worker (kills a hung Python loop without
+   SharedArrayBuffer; Cloudflare Pages could enable SAB via COOP/COEP
+   headers, but terminate-and-respawn stays — it doubles as the TLE signal).
    ══════════════════════════════════════════════════════════════════ */
 
 class PyEngine {

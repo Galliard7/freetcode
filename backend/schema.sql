@@ -43,3 +43,34 @@ CREATE TABLE IF NOT EXISTS leaderboard (
   ts       INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_lb_env_problem_ratio ON leaderboard(env, problem, ratio);
+
+-- Opt-in shared tutor chats (ADR 0004): ZERO identifiers by design — no client
+-- UUID, no ip_day, nothing linkable across rows. One row per shared exchange
+-- snapshot. turns = JSON [{role:'user'|'ai', text, rating?}]; rated counts
+-- 👍/👎-carrying replies (cheap corpus filter for eval/fine-tune use).
+CREATE TABLE IF NOT EXISTS tutor_chats (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  env       TEXT    NOT NULL DEFAULT 'prod',
+  problem   INTEGER NOT NULL,
+  user_code TEXT,                        -- the user's code at share time (capped)
+  verdict   TEXT,                        -- latest judge verdict at share time
+  ratio     REAL,                        -- composite score, if accepted
+  turns     TEXT    NOT NULL,            -- JSON array of chat turns (capped)
+  rated     INTEGER NOT NULL DEFAULT 0,  -- count of rated replies in turns
+  ts        INTEGER NOT NULL
+);
+-- Corpus reads: WHERE env=? [AND rated>0] ORDER BY ts. (D3)
+CREATE INDEX IF NOT EXISTS idx_tutor_env_ts ON tutor_chats(env, ts);
+
+-- Public traffic counters (A4): one row per (env, day, visitor). visitor =
+-- the salted daily IP hash (ipDayHash) → true daily uniques, no raw IP,
+-- bounded growth (≤ visitors/day rows, never one row per pageview). pv counts
+-- that visitor's pageviews that day. The PK doubles as the /traffic covering
+-- index (env, day prefix). WITHOUT ROWID: small PK-keyed rows, no autoinc.
+CREATE TABLE IF NOT EXISTS visits (
+  env     TEXT    NOT NULL DEFAULT 'prod',
+  day     TEXT    NOT NULL,              -- YYYY-MM-DD (UTC)
+  visitor TEXT    NOT NULL,              -- salted SHA-256(ip+day), 16 hex chars
+  pv      INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (env, day, visitor)
+) WITHOUT ROWID;

@@ -4,9 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FreetCode — Community Stats</title>
+<meta name="description" content="Live community stats for FreetCode — anonymous submissions, solve rates and traffic across the free coding interview problem set.">
+<link rel="canonical" href="https://freetcode.com/dashboard.html">
+<meta property="og:url" content="https://freetcode.com/dashboard.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="FreetCode — Community Stats">
+<meta property="og:description" content="Live community stats for FreetCode — anonymous submissions, solve rates and traffic across the free coding interview problem set.">
+<meta property="og:image" content="https://freetcode.com/assets/share-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FreetCode — Community Stats">
+<meta name="twitter:description" content="Live community stats for FreetCode — anonymous submissions, solve rates and traffic across the free coding interview problem set.">
+<meta name="twitter:image" content="https://freetcode.com/assets/share-card.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='50' font-weight='800' fill='white'>&lt;/&gt;</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 <link rel="stylesheet" href="themes.css?v=2">
 <script>
   (function(){
@@ -46,6 +57,10 @@
   .feed-row .ftitle .fnum { color: var(--fg-muted, #8a93a6); font-family: var(--font-mono, monospace); margin-right: 6px; }
   .feed-row .fratio { font-family: var(--font-mono, monospace); font-size: 12px; color: var(--fg-muted, #8a93a6); }
   .feed-row .fago { color: var(--fg-muted, #8a93a6); font-size: 12px; white-space: nowrap; }
+  .spark-wrap { margin: 0 0 32px; }
+  .spark { display: flex; align-items: flex-end; gap: 3px; height: 44px; }
+  .spark > div { flex: 1; min-width: 4px; background: var(--accent, #6366f1); border-radius: 2px 2px 0 0; opacity: .85; }
+  .spark-lbl { font-size: 11px; color: var(--fg-muted, #8a93a6); margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -59,7 +74,7 @@
   <div id="content"><div class="empty">Loading…</div></div>
 </div>
 
-<script src="stats.js?v=3"></script>
+<script src="stats.js?v=4"></script>
 <script>
 (async function () {
   const content = document.getElementById('content');
@@ -74,7 +89,7 @@
   // Titles from the problem index (served from KV by the Worker)
   let titles = {};
   try {
-    const ps = await (await fetch(Stats.base() + '/problems/index', { cache: 'no-cache' })).json();
+    const ps = await (await fetch(Stats.base() + '/problems/index')).json();
     for (const p of ps) titles[p.num] = p.title;
   } catch {}
 
@@ -93,6 +108,41 @@
     <div class="card"><div class="big">${solvedDistinct.toLocaleString()}</div><div class="lbl">Solver entries</div></div>
   </div>`;
 
+  // ── Traffic (A4): daily-unique visitors + pageviews from /traffic.
+  //    Rendered even with zero submissions; degrades silently if absent. ──
+  let traffic = null;
+  try {
+    const r = await fetch(Stats.base() + `/traffic?env=${Stats.ENV}&days=30`);
+    if (r.ok) traffic = await r.json();
+  } catch {}
+  if (traffic && traffic.series) {
+    const byDay = {};
+    for (const d of traffic.series) byDay[d.day] = d;
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const d = byDay[day] || {};
+      days.push({ day, visitors: d.visitors || 0, pageviews: d.pageviews || 0 });
+    }
+    const today = days[days.length - 1];
+    const v30 = traffic.series.reduce((s, d) => s + (d.visitors || 0), 0);
+    const p30 = traffic.series.reduce((s, d) => s + (d.pageviews || 0), 0);
+    const max = Math.max(1, ...days.map((d) => d.visitors));
+    let bars = '';
+    for (const d of days) {
+      const h = Math.max(4, Math.round(d.visitors / max * 100));
+      bars += `<div style="height:${h}%" title="${d.day} (UTC): ${d.visitors} visitors, ${d.pageviews} pageviews"></div>`;
+    }
+    html += `<div class="sec-title">Traffic</div>
+    <div class="cards">
+      <div class="card"><div class="big">${today.visitors.toLocaleString()}</div><div class="lbl">Visitors today</div></div>
+      <div class="card"><div class="big">${today.pageviews.toLocaleString()}</div><div class="lbl">Pageviews today</div></div>
+      <div class="card" title="Sum of daily unique visitors — identities rotate daily by design, so cross-day uniques are unknowable"><div class="big">${v30.toLocaleString()}</div><div class="lbl">Visitors (30d)</div></div>
+      <div class="card"><div class="big">${p30.toLocaleString()}</div><div class="lbl">Pageviews (30d)</div></div>
+    </div>
+    <div class="spark-wrap"><div class="spark">${bars}</div><div class="spark-lbl">Daily visitors — last 14 days (UTC)</div></div>`;
+  }
+
   if (!data.problems.length) {
     html += '<div class="empty">No submissions yet — be the first.</div>';
     content.innerHTML = html;
@@ -109,7 +159,7 @@
   }
   let recent = null;
   try {
-    const r = await fetch(Stats.base() + `/recent?env=${Stats.ENV}&limit=20`, { cache: 'no-cache' });
+    const r = await fetch(Stats.base() + `/recent?env=${Stats.ENV}&limit=20`);
     if (r.ok) recent = (await r.json()).events;
   } catch {}
   if (recent && recent.length) {

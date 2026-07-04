@@ -13,9 +13,13 @@ backend/.wrangler/
 .dev.vars
 **/.dev.vars
 
-# qa-swarm run artifacts (KB stays tracked)
-qa-reports/*/
-!qa-reports/QA-KNOWLEDGE.md
+# QA + internal testing artifacts — never public. The entire qa-reports/ tree
+# (knowledge base, conventions, procedures, ledgers, dated run reports) is
+# internal-only and stays local.
+qa-reports/
+
+# Claude Code local config + internal QA skills (freetcode-qa-*) — never public.
+.claude/
 
 # Marketing pre-production packages (local only, never committed/deployed)
 /productvid/
@@ -28,3 +32,23 @@ problems.json
 # Temporary scratch (handoffs, one-off tests)
 HANDOFF-*.md
 _kvtest.mjs
+
+# ─────────────────────────────────────────────────────────────────────────
+# Internal-only: only the CORE APPLICATION (html/js/css + backend/) ships
+# publicly. Everything that is a log, plan, learning/reference/decision doc, or
+# dev/test scaffolding stays local. (Decided 2026-07-04.)
+# (.gitignore has no inline comments — patterns must be alone on their line.)
+#   LAUNCH.md        = launch plan (security gaps + strategy)
+#   CHRONICLE.md     = build-story log w/ internal decisions
+#   CONTEXT.md       = domain glossary (reference doc)
+#   docs/            = ADRs (decision records) + architecture learning docs
+#   tutor-poc.html   = tutor stage-0 POC (dev scaffolding)
+#   test-sections.txt= internal test data
+#   prototypes/      = theme/design exploration mockups
+LAUNCH.md
+CHRONICLE.md
+CONTEXT.md
+docs/
+tutor-poc.html
+test-sections.txt
+prototypes/

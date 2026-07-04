@@ -23,6 +23,7 @@
   const WEBLLM_URL = 'https://esm.run/@mlc-ai/web-llm@0.2.84';
   const ENABLED_KEY = 'freetcode_tutor_enabled';
   const CHATS_KEY = 'freetcode_tutor_chats';
+  const SHARE_KEY = 'freetcode_tutor_share';   // opt-in chat sharing (ADR 0004) — absent/off by default
   const GREETING = "Hi! Ask me about the current problem, or any Python question — hints, explanations, complexity, or a quick syntax check.";
 
   const $ = (id) => document.getElementById(id);
@@ -38,6 +39,8 @@
   let activeNum = null;
   const saveChats = () => { try { localStorage.setItem(CHATS_KEY, JSON.stringify(chatStore)); } catch (e) {} };
   const curNum = () => { const p = (window.__oc || {}).problem; return p ? p.num : null; };
+  const shareOn = () => localStorage.getItem(SHARE_KEY) === '1';
+  const lastShared = {};   // problemNum -> snapshot last sent (session-scoped dedup)
 
   const SYSTEM = `You are a friendly, concise coding tutor inside FreetCode, a Python practice platform.
 Help the student LEARN — give Socratic nudges and minimal examples, not full solutions.
@@ -105,9 +108,67 @@ Keep replies short and conversational.`;
     const box = $('tutor-messages'); if (!box) return;
     box.innerHTML = '';
     const msgs = (num != null && chatStore[num]) ? chatStore[num] : null;
-    if (msgs && msgs.length) msgs.forEach((m) => addMsg(m.text, m.role, false));
-    else addMsg(GREETING, 'ai', false);
+    if (msgs && msgs.length) {
+      msgs.forEach((m, i) => {
+        const div = addMsg(m.text, m.role, false);
+        if (m.role === 'ai') attachRating(div, num, i);
+      });
+    } else addMsg(GREETING, 'ai', false);
   }
+
+  // ── opt-in chat sharing (ADR 0004) ──
+  // Rating buttons appear on tutor replies only while sharing is ON — a rating
+  // IS telemetry here (it's what makes a weak model's transcripts usable), so
+  // no dead controls when the user hasn't opted in.
+  function attachRating(div, num, idx) {
+    if (!shareOn() || num == null) return;
+    const cur = (chatStore[num] && chatStore[num][idx]) || null;
+    if (!cur) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'tutor-rate';
+    for (const r of ['up', 'down']) {
+      const b = document.createElement('button');
+      b.textContent = r === 'up' ? '👍' : '👎';
+      b.title = 'Rate this reply (shared anonymously)';
+      if (cur.rating === r) b.classList.add('sel');
+      b.addEventListener('click', () => {
+        cur.rating = r; saveChats();
+        wrap.querySelectorAll('button').forEach((x) => x.classList.remove('sel'));
+        b.classList.add('sel');
+        sendShared(num);   // "send on rate"
+      });
+      wrap.appendChild(b);
+    }
+    div.appendChild(wrap);
+  }
+
+  // Snapshot this problem's exchange → POST /tutor-chat (anonymous, zero
+  // identifiers — see stats.js). Deduped per problem per session so
+  // close/switch never re-sends an unchanged chat.
+  function sendShared(num) {
+    if (!shareOn() || num == null || !window.Stats || !Stats.postTutorChat) return;
+    const msgs = (chatStore[num] || []).slice(-40);
+    if (!msgs.some((m) => m.role === 'ai')) return;   // no tutor reply yet — nothing to share
+    const oc = window.__oc || {};
+    const v = oc.verdict;
+    const payload = {
+      problem: num,
+      user_code: (oc.problem && oc.problem.num === num) ? String(oc.code || '').slice(0, 16000) : null,
+      verdict: (v && v.problem === num) ? v.verdict : null,
+      ratio: (v && v.problem === num && typeof v.score === 'number') ? v.score : null,
+      turns: msgs.map((m) => {
+        const t = { role: m.role === 'ai' ? 'ai' : 'user', text: String(m.text).slice(0, 8000) };
+        if (m.rating === 'up' || m.rating === 'down') t.rating = m.rating;
+        return t;
+      }),
+    };
+    const snap = JSON.stringify(payload.turns) + '|' + (payload.user_code || '');
+    if (lastShared[num] === snap) return;
+    lastShared[num] = snap;
+    Stats.postTutorChat(payload);   // fire-and-forget
+  }
+  // "send on chat close": panel close, problem switch, page hide.
+  const flushShared = () => { if (ready && activeNum != null) sendShared(activeNum); };
 
   function clearChat() {
     if (activeNum != null) { delete chatStore[activeNum]; saveChats(); }
@@ -116,6 +177,10 @@ Keep replies short and conversational.`;
 
   async function send(text) {
     if (!ready || streaming) return;
+    if ((window.__oc || {}).busy) {   // resource guard (ADR 0003): judge and tutor never compute at once
+      addMsg('⏳ The judge is running — ask again when it finishes.', 'ai', false);
+      return;
+    }
     text = (text || $('tutor-input').value).trim();
     if (!text) return;
     $('tutor-input').value = '';
@@ -134,7 +199,11 @@ Keep replies short and conversational.`;
         if (d) { acc += d; out.textContent = acc; $('tutor-messages').scrollTop = $('tutor-messages').scrollHeight; }
       }
       out.textContent = acc || '(no response)';
-      if (num != null) { (chatStore[num] = chatStore[num] || []).push({ role: 'ai', text: out.textContent }); saveChats(); }
+      if (num != null) {
+        (chatStore[num] = chatStore[num] || []).push({ role: 'ai', text: out.textContent });
+        saveChats();
+        attachRating(out, num, chatStore[num].length - 1);
+      }
     } catch (e) {
       out.textContent = 'Error: ' + (e.message || e);
     } finally { streaming = false; }
@@ -230,13 +299,18 @@ Keep replies short and conversational.`;
     if (ready) renderChat(activeNum);
     refreshCacheNote();
   }
-  function closePanel() { panel.classList.remove('open'); $('tutor-toggle').classList.remove('active'); }
+  function closePanel() {
+    flushShared();   // "send on chat close"
+    panel.classList.remove('open'); $('tutor-toggle').classList.remove('active');
+  }
 
   // fresh slate on a new problem; restore the chat when returning to one
   window.addEventListener('oc:problemchange', (e) => {
+    flushShared();   // capture the outgoing problem's exchange before switching
     activeNum = (e && e.detail != null) ? e.detail : curNum();
     if (ready) renderChat(activeNum);
   });
+  window.addEventListener('pagehide', flushShared);   // best-effort on tab close
 
   $('tutor-toggle').addEventListener('click', () => panel.classList.contains('open') ? closePanel() : openPanel());
   $('tutor-close').addEventListener('click', closePanel);
@@ -251,6 +325,15 @@ Keep replies short and conversational.`;
   });
   const rm = $('tutor-remove'); if (rm) rm.addEventListener('click', removeModel);
   const sb = $('settings-btn'); if (sb) sb.addEventListener('click', updateSettings);
+  const shareBox = $('tutor-share');
+  if (shareBox) {
+    shareBox.checked = shareOn();
+    shareBox.addEventListener('change', () => {
+      if (shareBox.checked) localStorage.setItem(SHARE_KEY, '1');
+      else localStorage.removeItem(SHARE_KEY);
+      if (ready) renderChat(activeNum);   // show/hide rating controls immediately
+    });
+  }
 
   activeNum = curNum(); // best-effort initial (event will correct it)
 })();

@@ -9,6 +9,9 @@
      GET  /recent       recent submission stream (dashboard feed; anonymous)
      GET  /leaderboard  arcade AAA board for a problem
      POST /score        submit an AAA score
+     POST /hit         count a pageview (anonymous daily-unique visitor)
+     GET  /traffic      public traffic counters (daily series + totals)
+     POST /tutor-chat   opt-in shared tutor chat (ADR 0004; zero identifiers)
      GET  /             health
    No login, no PII. Rows tagged by env ('v2' = testing, 'prod' = live).
    ══════════════════════════════════════════════════════════════════ */
@@ -29,11 +32,13 @@ const BLOCKLIST = new Set([
   'CNT','TWT','SHT','PIS','BUM','HOE','RAP','GUN','VAG','PEN','FAP','JIZ',
 ]);
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...CORS },
-  });
+// maxAge > 0 adds Cache-Control so browsers reuse public read responses
+// instead of re-running the queries on every load. (workers.dev has no CF
+// edge cache — the browser cache is the lever until a custom domain, B4.)
+function json(data, status = 200, maxAge = 0) {
+  const headers = { 'Content-Type': 'application/json', ...CORS };
+  if (maxAge > 0) headers['Cache-Control'] = `public, max-age=${maxAge}`;
+  return new Response(JSON.stringify(data), { status, headers });
 }
 
 // Serve a raw JSON document straight from KV (no re-parse), with edge caching.
@@ -57,6 +62,32 @@ function tooMany() {
 
 function normEnv(e) { return (e === 'v2' || e === 'dev') ? e : 'prod'; }
 
+// C2: bounded body reads — reject oversized payloads before parsing (cap is in
+// chars; a fair proxy for bytes at these sizes). Returns {body} or {err}.
+async function readJson(req, maxChars) {
+  let raw;
+  try { raw = await req.text(); } catch (e) { return { err: json({ error: 'bad body' }, 400) }; }
+  if (raw.length > maxChars) return { err: json({ error: 'payload too large' }, 413) };
+  try { return { body: JSON.parse(raw || '{}') }; } catch (e) { return { err: json({ error: 'bad json' }, 400) }; }
+}
+
+// C1: Turnstile check on content writes. Deliberately a NO-OP until
+// TURNSTILE_SECRET exists (set via `wrangler secret put TURNSTILE_SECRET`),
+// so rollout stays decoupled: 1) deploy this Worker  2) ship the widget +
+// ts_token client-side  3) set the secret — enforcement flips on last.
+async function turnstileOk(envB, token, ip) {
+  if (!envB.TURNSTILE_SECRET) return true;
+  if (!token) return false;
+  try {
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: envB.TURNSTILE_SECRET, response: token, remoteip: ip }),
+    });
+    return (await r.json()).success === true;
+  } catch (e) { return false; }
+}
+
 function cleanInitials(s) {
   const v = String(s || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3);
   if (v.length !== 3 || BLOCKLIST.has(v)) return null;
@@ -68,6 +99,16 @@ async function ipDayHash(req) {
   const day = new Date().toISOString().slice(0, 10);
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('oc|' + ip + '|' + day));
   return [...new Uint8Array(buf)].slice(0, 8).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Self-declared crawlers (Googlebot etc.) are excluded from traffic counts so
+// the public numbers approximate humans — the same definition CF Web Analytics
+// uses. A bot that lies about its UA gets counted; accepted: dedup + the rate
+// limit bound the damage, and a vanity counter has ~zero inflation incentive.
+const BOT_UA = /bot|crawl|spider|slurp|headless|lighthouse|preview|scan|monitor|curl|wget|python|httpclient|facebookexternalhit|whatsapp|telegram/i;
+function isDeclaredBot(req) {
+  const ua = req.headers.get('User-Agent') || '';
+  return !ua || BOT_UA.test(ua);
 }
 
 // Aggregate for one problem (+ this client's standing if a ratio is given).
@@ -98,9 +139,10 @@ async function problemStats(db, env, problem, ratio) {
   };
 }
 
-async function handleEvent(req, db) {
-  let b;
-  try { b = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
+async function handleEvent(req, db, envB, ip) {
+  const { body: b, err } = await readJson(req, 2048);
+  if (err) return err;
+  if (!(await turnstileOk(envB, b.ts_token, ip))) return json({ error: 'verification failed' }, 403);
   const env = normEnv(b.env);
   const problem = Number(b.problem);
   const client = String(b.client || '').slice(0, 64);
@@ -129,7 +171,7 @@ async function handleStats(url, db) {
   const problem = url.searchParams.get('problem');
   if (problem != null) {
     const stat = await problemStats(db, env, Number(problem), null);
-    return json({ ok: true, problem: Number(problem), ...stat });
+    return json({ ok: true, problem: Number(problem), ...stat }, 200, 30);
   }
   // Raw volume AND distinct-client counts. Solve rate is computed per-person so
   // one user spamming Submit can't move it (attempters/accepters are DISTINCT).
@@ -204,7 +246,9 @@ async function handleStats(url, db) {
     problems_attempted: problems.length,
     unlock_at: UNLOCK_AT,
   };
-  return json({ ok: true, env, totals, problems });
+  // 60s cache: the CTEs above are the most expensive queries in the Worker
+  // and run per dashboard load — this header is the biggest capacity lever (D4).
+  return json({ ok: true, env, totals, problems }, 200, 60);
 }
 
 // Recent submission stream for the dashboard feed. Anonymous by construction:
@@ -215,7 +259,7 @@ async function handleRecent(url, db) {
   const rows = await db.prepare(
     'SELECT problem, verdict, ratio, ts FROM events WHERE env=? ORDER BY ts DESC LIMIT ?'
   ).bind(env, lim).all();
-  return json({ ok: true, env, events: rows.results || [] });
+  return json({ ok: true, env, events: rows.results || [] }, 200, 30);
 }
 
 async function board(db, env, problem) {
@@ -229,12 +273,13 @@ async function handleLeaderboard(url, db) {
   const env = normEnv(url.searchParams.get('env'));
   const problem = Number(url.searchParams.get('problem'));
   if (!Number.isInteger(problem)) return json({ error: 'bad request' }, 400);
-  return json({ ok: true, board: await board(db, env, problem) });
+  return json({ ok: true, board: await board(db, env, problem) }, 200, 60);
 }
 
-async function handleScore(req, db) {
-  let b;
-  try { b = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
+async function handleScore(req, db, envB, ip) {
+  const { body: b, err } = await readJson(req, 2048);
+  if (err) return err;
+  if (!(await turnstileOk(envB, b.ts_token, ip))) return json({ error: 'verification failed' }, 403);
   const env = normEnv(b.env);
   const problem = Number(b.problem);
   const initials = cleanInitials(b.initials);
@@ -254,6 +299,76 @@ async function handleScore(req, db) {
        SELECT id FROM leaderboard WHERE env=? AND problem=? ORDER BY ratio ASC LIMIT ?)`
   ).bind(env, problem, env, problem, BOARD_KEEP).run();
   return json({ ok: true, board: await board(db, env, problem) });
+}
+
+// Traffic beacon (A4). One row per (env, day, visitor); reloads bump pv.
+// visitor = ipDayHash → daily-unique by construction, no raw IP stored,
+// unlinkable across days. Deliberately NOT behind Turnstile: a page-load
+// beacon can't run a challenge without losing fast-bouncing humans.
+async function handleHit(req, db) {
+  const { body: b, err } = await readJson(req, 512);
+  if (err) return err;
+  const env = normEnv(b.env);
+  if (isDeclaredBot(req)) return json({ ok: true, counted: false });
+  const day = new Date().toISOString().slice(0, 10);
+  const visitor = await ipDayHash(req);
+  await db.prepare(
+    `INSERT INTO visits (env, day, visitor, pv) VALUES (?,?,?,1)
+     ON CONFLICT(env, day, visitor) DO UPDATE SET pv = pv + 1`
+  ).bind(env, day, visitor).run();
+  return json({ ok: true, counted: true });
+}
+
+// A1 (ADR 0004): opt-in shared tutor chats. ZERO identifiers stored — no
+// client UUID, no ip_day, deliberately unlike every other write. Shape-
+// validated and capped (C2); Turnstile like all content writes once the
+// secret is set. rated = count of 👍/👎-carrying replies.
+const TC_MAX_TURNS = 40, TC_MAX_TEXT = 8000, TC_MAX_CODE = 16000, TC_MAX_BODY = 96000;
+async function handleTutorChat(req, db, envB, ip) {
+  const { body: b, err } = await readJson(req, TC_MAX_BODY);
+  if (err) return err;
+  if (!(await turnstileOk(envB, b.ts_token, ip))) return json({ error: 'verification failed' }, 403);
+  const env = normEnv(b.env);
+  const problem = Number(b.problem);
+  if (!Number.isInteger(problem)) return json({ error: 'bad request' }, 400);
+  if (!Array.isArray(b.turns) || b.turns.length === 0 || b.turns.length > TC_MAX_TURNS)
+    return json({ error: 'bad turns' }, 400);
+  let rated = 0;
+  const turns = [];
+  for (const t of b.turns) {
+    const role = t && (t.role === 'ai' || t.role === 'user') ? t.role : null;
+    if (!role || typeof t.text !== 'string' || !t.text) return json({ error: 'bad turn shape' }, 400);
+    const turn = { role, text: t.text.slice(0, TC_MAX_TEXT) };
+    if (t.rating === 'up' || t.rating === 'down') { turn.rating = t.rating; rated++; }
+    turns.push(turn);
+  }
+  const user_code = typeof b.user_code === 'string' ? b.user_code.slice(0, TC_MAX_CODE) : null;
+  const verdict = typeof b.verdict === 'string' ? b.verdict.slice(0, 16) : null;
+  const ratio = (typeof b.ratio === 'number' && isFinite(b.ratio) && b.ratio > 0) ? b.ratio : null;
+  await db.prepare(
+    'INSERT INTO tutor_chats (env,problem,user_code,verdict,ratio,turns,rated,ts) VALUES (?,?,?,?,?,?,?,?)'
+  ).bind(env, problem, user_code, verdict, ratio, JSON.stringify(turns), rated, Date.now()).run();
+  return json({ ok: true, rated });
+}
+
+// Public counters for the dashboard: daily series (visitors = distinct daily
+// hashes, pageviews = SUM(pv)) + all-time totals. visitor_days is the honest
+// name — unique visitors across days is unknowable since hashes rotate daily.
+async function handleTraffic(url, db) {
+  const env = normEnv(url.searchParams.get('env'));
+  const days = Math.min(90, Math.max(1, Number(url.searchParams.get('days')) || 30));
+  const rows = await db.prepare(
+    `SELECT day, COUNT(*) AS visitors, SUM(pv) AS pageviews
+     FROM visits WHERE env=? GROUP BY day ORDER BY day DESC LIMIT ?`
+  ).bind(env, days).all();
+  const series = (rows.results || []).reverse();   // chronological
+  const tot = await db.prepare(
+    'SELECT COUNT(*) AS visitor_days, COALESCE(SUM(pv),0) AS pageviews FROM visits WHERE env=?'
+  ).bind(env).first();
+  return json({
+    ok: true, env, series,
+    totals: { visitor_days: tot ? tot.visitor_days : 0, pageviews: tot ? tot.pageviews : 0 },
+  }, 200, 60);
 }
 
 export default {
@@ -278,15 +393,24 @@ export default {
       }
       if (url.pathname === '/event' && request.method === 'POST') {
         if (env.RL_WRITE && !(await env.RL_WRITE.limit({ key: ip })).success) return tooMany();
-        return await handleEvent(request, db);
+        return await handleEvent(request, db, env, ip);
       }
       if (url.pathname === '/stats' && request.method === 'GET') return await handleStats(url, db);
       if (url.pathname === '/recent' && request.method === 'GET') return await handleRecent(url, db);
       if (url.pathname === '/leaderboard' && request.method === 'GET') return await handleLeaderboard(url, db);
       if (url.pathname === '/score' && request.method === 'POST') {
         if (env.RL_WRITE && !(await env.RL_WRITE.limit({ key: ip })).success) return tooMany();
-        return await handleScore(request, db);
+        return await handleScore(request, db, env, ip);
       }
+      if (url.pathname === '/tutor-chat' && request.method === 'POST') {
+        if (env.RL_WRITE && !(await env.RL_WRITE.limit({ key: ip })).success) return tooMany();
+        return await handleTutorChat(request, db, env, ip);
+      }
+      if (url.pathname === '/hit' && request.method === 'POST') {
+        if (env.RL_WRITE && !(await env.RL_WRITE.limit({ key: ip })).success) return tooMany();
+        return await handleHit(request, db);
+      }
+      if (url.pathname === '/traffic' && request.method === 'GET') return await handleTraffic(url, db);
       return json({ error: 'not found' }, 404);
     } catch (e) {
       return json({ error: e.message || String(e) }, 500);

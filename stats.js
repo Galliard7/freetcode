@@ -12,7 +12,7 @@ const Stats = (() => {
   // ↓↓↓ Set this to the deployed Worker URL (no trailing slash). Empty = disabled.
   const STATS_BASE = 'https://freetcode-stats.galliard7.workers.dev';
   // Local/dev hosts write to a separate 'dev' bucket so testing never pollutes
-  // production stats. Real visitors (github.io / custom domains) write 'prod'.
+  // production stats. Real visitors (freetcode.com / any non-local host) write 'prod'.
   const ENV = (location.protocol === 'file:' ||
     /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])$/.test(location.hostname)) ? 'dev' : 'prod';
 
@@ -71,7 +71,42 @@ const Stats = (() => {
     } catch { return null; }
   }
 
-  return { enabled, clientId, postEvent, getStats, getLeaderboard, postScore, ENV, base: () => STATS_BASE };
+  // Opt-in shared tutor chat (ADR 0004). Deliberately NO clientId in this
+  // payload — shared chats carry zero identifiers, unlike every other write.
+  // ts_token rides along once Turnstile goes live (empty until then).
+  async function postTutorChat({ problem, user_code, verdict, ratio, turns, ts_token }) {
+    if (!enabled()) return null;
+    try {
+      // keepalive: lets a share fired on tab-close/pagehide complete (≤64KiB).
+      const r = await fetch(STATS_BASE + '/tutor-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({ problem, user_code, verdict, ratio, turns, ts_token, env: ENV }),
+      });
+      return r.ok ? await r.json() : null;
+    } catch (e) { return null; }
+  }
+
+  // Fire-and-forget pageview beacon → POST /hit. Counting happens server-side:
+  // one row per (env, day, salted-daily-IP-hash), no raw IP stored, bots that
+  // self-identify are skipped by the Worker. Auto-fires once per page load
+  // below, so every page that includes stats.js is counted.
+  function hit() {
+    if (!enabled()) return;
+    try {
+      // Deliberately NO Content-Type header: keeps this a "simple" CORS
+      // request, so the browser skips the OPTIONS preflight — one Worker
+      // request per pageview instead of two (quota matters at 100k/day).
+      fetch(STATS_BASE + '/hit', {
+        method: 'POST',
+        body: JSON.stringify({ env: ENV }),
+      }).catch(() => {});
+    } catch (e) {}
+  }
+  hit(); // count this page load
+
+  return { enabled, clientId, postEvent, getStats, getLeaderboard, postScore, postTutorChat, hit, ENV, base: () => STATS_BASE };
 })();
 
 window.Stats = Stats;
