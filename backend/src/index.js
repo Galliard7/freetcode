@@ -283,7 +283,6 @@ async function handleLeaderboard(url, db) {
 async function handleScore(req, db, envB, ip) {
   const { body: b, err } = await readJson(req, 2048);
   if (err) return err;
-  if (!(await turnstileOk(envB, b.ts_token, ip, normEnv(b.env)))) return json({ error: 'verification failed' }, 403);
   const env = normEnv(b.env);
   const problem = Number(b.problem);
   const initials = cleanInitials(b.initials);
@@ -325,13 +324,12 @@ async function handleHit(req, db) {
 
 // A1 (ADR 0004): opt-in shared tutor chats. ZERO identifiers stored — no
 // client UUID, no ip_day, deliberately unlike every other write. Shape-
-// validated and capped (C2); Turnstile like all content writes once the
-// secret is set. rated = count of 👍/👎-carrying replies.
+// validated and capped (C2); NOT Turnstile-gated (only /event is) — opt-in +
+// rate-limited is enough. rated = count of 👍/👎-carrying replies.
 const TC_MAX_TURNS = 40, TC_MAX_TEXT = 8000, TC_MAX_CODE = 16000, TC_MAX_BODY = 96000;
 async function handleTutorChat(req, db, envB, ip) {
   const { body: b, err } = await readJson(req, TC_MAX_BODY);
   if (err) return err;
-  if (!(await turnstileOk(envB, b.ts_token, ip, normEnv(b.env)))) return json({ error: 'verification failed' }, 403);
   const env = normEnv(b.env);
   const problem = Number(b.problem);
   if (!Number.isInteger(problem)) return json({ error: 'bad request' }, 400);

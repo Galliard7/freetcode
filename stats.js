@@ -20,13 +20,13 @@ const Stats = (() => {
     return !!STATS_BASE && !STATS_BASE.includes('YOURNAME');
   }
 
-  // ── Turnstile (C1): a fresh, single-use token per human-authored write ──
-  // A Managed widget rendered invisibly (appearance:'interaction-only') in
-  // execute mode: no UI for normal visitors — a challenge only surfaces for
-  // clients Cloudflare finds suspicious. tsToken() resolves null if Turnstile
-  // is absent or slow, and the Worker treats a missing token as OK until
-  // TURNSTILE_SECRET is set, so this ships dark and cannot break writes before
-  // enforcement is switched on (rollout order: client → deploy → secret last).
+  // ── Turnstile (C1): a fresh, single-use token for the Submit write (/event) ──
+  // Only /event is gated — it's the high-volume stat a bot could poison. /score
+  // (leaderboard initials) and /tutor-chat rely on rate-limits + shape caps so a
+  // single solve doesn't fire repeated challenges. A Managed widget rendered
+  // invisibly (appearance:'interaction-only') in execute mode: no UI for normal
+  // visitors — a challenge only surfaces for clients CF finds suspicious.
+  // tsToken() resolves null if Turnstile is absent or slow.
   const TS_SITEKEY = '0x4AAAAAADvctMwoMvejSfa-';
   let tsWidget = null, tsPending = null;
   const tsDeliver = (tok) => { const p = tsPending; tsPending = null; if (p) p(tok); };
@@ -43,10 +43,13 @@ const Stats = (() => {
       });
     } catch (e) { tsWidget = null; }
   };
-  // Resolve a fresh token (single-use, 300s TTL) or null. Never rejects and
-  // never blocks a write longer than `timeoutMs`; a write that misses its token
-  // is dropped server-side once enforcement is live, never surfaced to the user.
-  function tsToken(timeoutMs = 4000) {
+  // Resolve a fresh token (single-use, 300s TTL) or null. Never rejects. The
+  // timeout is generous on purpose: a *visible* Managed challenge (interaction-
+  // only surfaces one for clients CF finds suspicious) can take many seconds to
+  // clear, and too short a cap discards the late-arriving token — which is then
+  // rejected server-side. Invisible passes resolve in under a second, so normal
+  // users see no delay; only a challenged user ever waits.
+  function tsToken(timeoutMs = 30000) {
     if (!window.turnstile || tsWidget === null) return Promise.resolve(null);
     return new Promise((resolve) => {
       let settled = false;
@@ -101,11 +104,10 @@ const Stats = (() => {
   async function postScore({ problem, initials, ratio, t_ratio, s_ratio }) {
     if (!enabled()) return null;
     try {
-      const ts_token = await tsToken();
       const r = await fetch(STATS_BASE + '/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem, initials, ratio, t_ratio: t_ratio ?? null, s_ratio: s_ratio ?? null, client: clientId(), env: ENV, ts_token }),
+        body: JSON.stringify({ problem, initials, ratio, t_ratio: t_ratio ?? null, s_ratio: s_ratio ?? null, client: clientId(), env: ENV }),
       });
       return r.ok ? (await r.json()).board : null;
     } catch { return null; }
@@ -113,19 +115,17 @@ const Stats = (() => {
 
   // Opt-in shared tutor chat (ADR 0004). Deliberately NO clientId in this
   // payload — shared chats carry zero identifiers, unlike every other write.
-  // Mints its own Turnstile token like the other content writes; the token is
-  // awaited, so a pagehide-triggered flush may miss it (best-effort by design —
-  // the rate / close / problem-switch triggers all fire while the page is live).
+  // Not Turnstile-gated (only /event is): opt-in + rate-limited + shape-capped
+  // is enough, and gating it would add a challenge to the share flow.
   async function postTutorChat({ problem, user_code, verdict, ratio, turns }) {
     if (!enabled()) return null;
     try {
-      const ts_token = await tsToken();
       // keepalive: lets a share fired on tab-close/pagehide complete (≤64KiB).
       const r = await fetch(STATS_BASE + '/tutor-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         keepalive: true,
-        body: JSON.stringify({ problem, user_code, verdict, ratio, turns, ts_token, env: ENV }),
+        body: JSON.stringify({ problem, user_code, verdict, ratio, turns, env: ENV }),
       });
       return r.ok ? await r.json() : null;
     } catch (e) { return null; }
