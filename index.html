@@ -193,7 +193,7 @@
   <!-- Python engine (Pyodide in a worker) + judging + stats -->
   <script src="pyengine.js?v=2"></script>
   <script src="judge.js?v=2"></script>
-  <script src="stats.js?v=5"></script>
+  <script src="stats.js?v=6"></script>
 
   <!-- Visualizer Scripts -->
   <script src="visualizers/dfs.js"></script>
@@ -634,8 +634,10 @@ async function selectProblem(p) {
   currentSolutionIdx = 0;
   document.getElementById('solution-dropdown').classList.remove('show');
 
-  // Show submit button and solved button
+  // Show submit button and solved button (showingSolution was reset above,
+  // so clear any view-lock left by the previous problem)
   submitBtn.style.display = p.solution ? '' : 'none';
+  setSubmitLocked(false);
   const markSolvedBtn = document.getElementById('mark-solved');
   markSolvedBtn.style.display = '';
   if (solvedSet.has(p.num)) {
@@ -704,6 +706,37 @@ function hideComplexity() {
   document.getElementById('complexity-bar').style.display = 'none';
 }
 
+// ── Anti-gaming (minimal, study-tool spirit): while a reference solution is
+// shown, Run works but Submit is locked; and a problem whose solution has been
+// viewed (remembered in localStorage) refuses to grade a near-verbatim copy. ──
+const viewedSolutions = new Set(JSON.parse(localStorage.getItem('freetcode_viewed_solutions') || '[]'));
+function markSolutionViewed(num) {
+  if (viewedSolutions.has(num)) return;
+  viewedSolutions.add(num);
+  localStorage.setItem('freetcode_viewed_solutions', JSON.stringify([...viewedSolutions]));
+}
+// Comments + all whitespace stripped: catches paste-plus-reindent/comment edits.
+function normalizeForCompare(code) {
+  return (code || '').replace(/#[^\n]*/g, '').replace(/\s+/g, '');
+}
+function isReferenceCopy(code, p) {
+  const u = normalizeForCompare(code);
+  if (!u) return false;
+  return getAllSolutions(p).some(s => {
+    const ref = normalizeForCompare(s.code);
+    return ref && (u === ref || (ref.length >= 60 && u.includes(ref)));
+  });
+}
+function setSubmitLocked(locked) {
+  if (locked) {
+    submitBtn.disabled = true;
+    submitBtn.title = 'Hide the solution to submit — Run is available while viewing';
+  } else {
+    submitBtn.title = 'Submit for grading: correctness + scaled stress test';
+    if (pyReady && !isRunning && currentProblem && currentProblem.solution) submitBtn.disabled = false;
+  }
+}
+
 function showSolution(idx) {
   if (!currentProblem || !editor) return;
   const sols = getAllSolutions(currentProblem);
@@ -715,6 +748,8 @@ function showSolution(idx) {
   const label = sols.length > 1 ? sols[idx].label : 'Solution';
   solutionToggle.textContent = `Hide: ${label}`;
   showingSolution = true;
+  markSolutionViewed(currentProblem.num);
+  setSubmitLocked(true);
   showComplexity(sols[idx], currentProblem);
   document.getElementById('solution-dropdown').classList.remove('show');
 }
@@ -728,6 +763,7 @@ solutionToggle.addEventListener('click', () => {
     editor.setScrollPosition({ scrollTop: 0 });
     solutionToggle.textContent = 'Show Solution';
     showingSolution = false;
+    setSubmitLocked(false);
     hideComplexity();
   }
 });
@@ -1194,7 +1230,7 @@ function onEngineReady() {
   pyReady = true;
   runBtn.disabled = false;
   runBtn.innerHTML = '▶ Run <kbd>⌘↵</kbd>';
-  if (currentProblem && currentProblem.solution) submitBtn.disabled = false;
+  if (currentProblem && currentProblem.solution && !showingSolution) submitBtn.disabled = false;
   submitBtn.innerHTML = '✓ Submit <kbd>⌘⇧↵</kbd>';
   pyBanner.style.cursor = '';
   pyBanner.onclick = null;
@@ -1339,17 +1375,20 @@ const SCALED_N = 200000; // default stress size when a problem has no spec.n
 
 async function submitCode() {
   if (!pyReady || !editor || !currentProblem || isRunning) return;
+  // Submit is locked while the reference solution is shown (the button is
+  // disabled; this guard also covers the ⌘⇧↵ shortcut). Hide it to submit.
+  if (showingSolution) return;
+  const userCode = editor.getValue();
+  // Copy gate: if this problem's solution has been viewed, refuse to grade a
+  // near-verbatim copy of any reference solution. Study tool, not a stamp.
+  if (viewedSolutions.has(currentProblem.num) && isReferenceCopy(userCode, currentProblem)) {
+    outputEl.innerHTML = '<div class="verdict-card v-neutral"><div class="verdict-head">📋 That\'s the reference solution, copied as-is.</div><div>The win here is being able to write it yourself. Rewrite it from memory — Run is always available while you experiment — then Submit.</div></div>';
+    return;
+  }
   isRunning = true;
   setBusy(submitBtn, '⏳ Judging...');
   runBtn.disabled = true;
   outputEl.innerHTML = '';
-  // Submitting while the reference solution is shown is a test run, not a real
-  // attempt — judge + benchmark it, but never record it as solved.
-  const reviewing = showingSolution;
-  if (reviewing) {
-    outputEl.innerHTML += '<div class="verdict-card v-neutral"><div class="verdict-head">👁 Viewing solution — this Submit is for testing and won\'t be recorded as solved.</div></div>';
-  }
-  const userCode = editor.getValue();
   const solution = currentProblem.solution;
   const spec = currentProblem.judge || null;
 
@@ -1360,13 +1399,13 @@ async function submitCode() {
       : await engine.judgeStdout(userCode, solution);
     outputEl.innerHTML += Judge.formatCorrectness(corr);
 
-    const recordStats = !reviewing && Stats.enabled();
+    const recordStats = Stats.enabled();
     let verdict = corr.error ? 'error' : (corr.correct ? 'accepted' : 'wrong');
     let finalScore = null;          // composite (time+space) — drives stats + board
     let tRatio = null, sRatio = null;
 
     if (corr.correct) {
-      if (!reviewing) markSolved(currentProblem.num);
+      markSolved(currentProblem.num);
       const specJson = spec ? JSON.stringify(spec) : null;
 
       if (spec && spec.gen) {
