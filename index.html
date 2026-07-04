@@ -193,7 +193,7 @@
   <!-- Python engine (Pyodide in a worker) + judging + stats -->
   <script src="pyengine.js?v=2"></script>
   <script src="judge.js?v=2"></script>
-  <script src="stats.js?v=4"></script>
+  <script src="stats.js?v=5"></script>
 
   <!-- Visualizer Scripts -->
   <script src="visualizers/dfs.js"></script>
@@ -1498,5 +1498,10 @@ window.__oc = {
      with the one from your CF dashboard (Web Analytics → Add a site → Manage site). -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
   data-cf-beacon='{"token": "f0c5ce1b53bf4e2fa3ad83c740d1d9d8"}'></script>
+<!-- Cloudflare Turnstile (C1): invisible "are-you-human" check on content writes.
+     execute mode → stats.js mints a token per write; the widget only renders a
+     visible challenge for clients CF finds suspicious (appearance:interaction-only). -->
+<div id="ts-widget" style="position:fixed;right:16px;bottom:16px;z-index:9999"></div>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit" async defer></script>
 </body>
 </html>

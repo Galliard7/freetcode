@@ -71,11 +71,15 @@ async function readJson(req, maxChars) {
   try { return { body: JSON.parse(raw || '{}') }; } catch (e) { return { err: json({ error: 'bad json' }, 400) }; }
 }
 
-// C1: Turnstile check on content writes. Deliberately a NO-OP until
-// TURNSTILE_SECRET exists (set via `wrangler secret put TURNSTILE_SECRET`),
-// so rollout stays decoupled: 1) deploy this Worker  2) ship the widget +
-// ts_token client-side  3) set the secret — enforcement flips on last.
-async function turnstileOk(envB, token, ip) {
+// C1: Turnstile check on human-authored content writes. Two deliberate
+// bypasses: (a) non-prod buckets ('dev'/'v2') never require it — they're test
+// data, never shown publicly, so gating them would only break local dev; (b)
+// it's a NO-OP until TURNSTILE_SECRET exists (set via `wrangler secret put
+// TURNSTILE_SECRET`), so rollout stays decoupled: 1) deploy this Worker
+// 2) ship the widget + ts_token client-side  3) set the secret — enforcement
+// flips on last, for 'prod' writes only.
+async function turnstileOk(envB, token, ip, env) {
+  if (env !== 'prod') return true;
   if (!envB.TURNSTILE_SECRET) return true;
   if (!token) return false;
   try {
@@ -142,7 +146,7 @@ async function problemStats(db, env, problem, ratio) {
 async function handleEvent(req, db, envB, ip) {
   const { body: b, err } = await readJson(req, 2048);
   if (err) return err;
-  if (!(await turnstileOk(envB, b.ts_token, ip))) return json({ error: 'verification failed' }, 403);
+  if (!(await turnstileOk(envB, b.ts_token, ip, normEnv(b.env)))) return json({ error: 'verification failed' }, 403);
   const env = normEnv(b.env);
   const problem = Number(b.problem);
   const client = String(b.client || '').slice(0, 64);
@@ -279,7 +283,7 @@ async function handleLeaderboard(url, db) {
 async function handleScore(req, db, envB, ip) {
   const { body: b, err } = await readJson(req, 2048);
   if (err) return err;
-  if (!(await turnstileOk(envB, b.ts_token, ip))) return json({ error: 'verification failed' }, 403);
+  if (!(await turnstileOk(envB, b.ts_token, ip, normEnv(b.env)))) return json({ error: 'verification failed' }, 403);
   const env = normEnv(b.env);
   const problem = Number(b.problem);
   const initials = cleanInitials(b.initials);
@@ -327,7 +331,7 @@ const TC_MAX_TURNS = 40, TC_MAX_TEXT = 8000, TC_MAX_CODE = 16000, TC_MAX_BODY = 
 async function handleTutorChat(req, db, envB, ip) {
   const { body: b, err } = await readJson(req, TC_MAX_BODY);
   if (err) return err;
-  if (!(await turnstileOk(envB, b.ts_token, ip))) return json({ error: 'verification failed' }, 403);
+  if (!(await turnstileOk(envB, b.ts_token, ip, normEnv(b.env)))) return json({ error: 'verification failed' }, 403);
   const env = normEnv(b.env);
   const problem = Number(b.problem);
   if (!Number.isInteger(problem)) return json({ error: 'bad request' }, 400);

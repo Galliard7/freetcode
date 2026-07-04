@@ -20,6 +20,44 @@ const Stats = (() => {
     return !!STATS_BASE && !STATS_BASE.includes('YOURNAME');
   }
 
+  // ── Turnstile (C1): a fresh, single-use token per human-authored write ──
+  // A Managed widget rendered invisibly (appearance:'interaction-only') in
+  // execute mode: no UI for normal visitors — a challenge only surfaces for
+  // clients Cloudflare finds suspicious. tsToken() resolves null if Turnstile
+  // is absent or slow, and the Worker treats a missing token as OK until
+  // TURNSTILE_SECRET is set, so this ships dark and cannot break writes before
+  // enforcement is switched on (rollout order: client → deploy → secret last).
+  const TS_SITEKEY = '0x4AAAAAADvctMwoMvejSfa-';
+  let tsWidget = null, tsPending = null;
+  const tsDeliver = (tok) => { const p = tsPending; tsPending = null; if (p) p(tok); };
+  window.onloadTurnstileCallback = function () {
+    if (!window.turnstile || tsWidget !== null) return;
+    try {
+      tsWidget = window.turnstile.render('#ts-widget', {
+        sitekey: TS_SITEKEY,
+        execution: 'execute',            // mint on demand (per write), not at load
+        appearance: 'interaction-only',  // invisible unless a challenge is needed
+        callback: tsDeliver,
+        'error-callback': () => { tsDeliver(null); return true; },
+        'expired-callback': () => {},    // stale token; next tsToken() re-executes
+      });
+    } catch (e) { tsWidget = null; }
+  };
+  // Resolve a fresh token (single-use, 300s TTL) or null. Never rejects and
+  // never blocks a write longer than `timeoutMs`; a write that misses its token
+  // is dropped server-side once enforcement is live, never surfaced to the user.
+  function tsToken(timeoutMs = 4000) {
+    if (!window.turnstile || tsWidget === null) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      let settled = false;
+      const done = (v) => { if (!settled) { settled = true; resolve(v); } };
+      tsPending = done;
+      try { window.turnstile.reset(tsWidget); window.turnstile.execute(tsWidget); }
+      catch (e) { tsPending = null; return done(null); }
+      setTimeout(() => { if (tsPending === done) tsPending = null; done(null); }, timeoutMs);
+    });
+  }
+
   function clientId() {
     let id = localStorage.getItem('freetcode_client');
     if (!id) {
@@ -33,10 +71,11 @@ const Stats = (() => {
   async function postEvent({ problem, verdict, ratio }) {
     if (!enabled()) return null;
     try {
+      const ts_token = await tsToken();
       const r = await fetch(STATS_BASE + '/event', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem, verdict, ratio: ratio ?? null, client: clientId(), env: ENV }),
+        body: JSON.stringify({ problem, verdict, ratio: ratio ?? null, client: clientId(), env: ENV, ts_token }),
       });
       return r.ok ? await r.json() : null;
     } catch { return null; }
@@ -62,10 +101,11 @@ const Stats = (() => {
   async function postScore({ problem, initials, ratio, t_ratio, s_ratio }) {
     if (!enabled()) return null;
     try {
+      const ts_token = await tsToken();
       const r = await fetch(STATS_BASE + '/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem, initials, ratio, t_ratio: t_ratio ?? null, s_ratio: s_ratio ?? null, client: clientId(), env: ENV }),
+        body: JSON.stringify({ problem, initials, ratio, t_ratio: t_ratio ?? null, s_ratio: s_ratio ?? null, client: clientId(), env: ENV, ts_token }),
       });
       return r.ok ? (await r.json()).board : null;
     } catch { return null; }
@@ -73,10 +113,13 @@ const Stats = (() => {
 
   // Opt-in shared tutor chat (ADR 0004). Deliberately NO clientId in this
   // payload — shared chats carry zero identifiers, unlike every other write.
-  // ts_token rides along once Turnstile goes live (empty until then).
-  async function postTutorChat({ problem, user_code, verdict, ratio, turns, ts_token }) {
+  // Mints its own Turnstile token like the other content writes; the token is
+  // awaited, so a pagehide-triggered flush may miss it (best-effort by design —
+  // the rate / close / problem-switch triggers all fire while the page is live).
+  async function postTutorChat({ problem, user_code, verdict, ratio, turns }) {
     if (!enabled()) return null;
     try {
+      const ts_token = await tsToken();
       // keepalive: lets a share fired on tab-close/pagehide complete (≤64KiB).
       const r = await fetch(STATS_BASE + '/tutor-chat', {
         method: 'POST',
