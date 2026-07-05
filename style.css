@@ -917,7 +917,7 @@ kbd {
   .header { padding: 0 8px; gap: 8px; }
   .logo span { font-size: 14px; }
   .header-actions { gap: 2px; }
-  .header-actions .btn { padding: 6px 8px; font-size: 11px; }
+  .header-actions .btn { min-width: 40px; min-height: 40px; padding: 8px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
   .header-actions .btn-text { display: none; } /* hide text labels, keep emoji */
   .header-actions kbd { display: none; }
 
@@ -975,6 +975,9 @@ kbd {
 
   /* ── Touch targets: min 44px ── */
   .btn-icon { width: 40px; height: 40px; font-size: 18px; }
+  .rail-btn { min-height: 44px; }
+  .collection-pill { min-height: 30px; display: inline-flex; align-items: center; }
+  .toolbar .btn { min-height: 36px; }
   .problem-item { padding: 10px 14px 10px 24px; }
   .category-header { padding: 10px 14px; }
   .sidebar-search input { font-size: 16px; padding: 10px 12px; }

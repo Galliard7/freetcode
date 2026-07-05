@@ -676,6 +676,8 @@ async function selectProblem(p) {
   } else {
     descContent.innerHTML = '<p style="color:var(--fg-muted);font-style:italic">No description available for this problem.</p>';
   }
+  // Show the problem by default (or honor the user's remembered preference)
+  toggleDescription(descVisible);
 
   // Update viz button visibility
   updateVizButton();
@@ -810,7 +812,7 @@ document.addEventListener('click', (e) => {
 // ─── Description Panel ───
 const descPanel = document.getElementById('desc-panel');
 const descContent = document.getElementById('desc-content');
-let descVisible = false;
+let descVisible = localStorage.getItem('freetcode_desc_open') !== '0'; // open by default; remembers a manual close
 
 function renderDescription(md) {
   // SECURITY: escape ALL HTML entities up front so nothing in the source text
@@ -865,6 +867,7 @@ function toggleDescription(show) {
   descVisible = typeof show === 'boolean' ? show : !descVisible;
   descPanel.style.display = descVisible ? '' : 'none';
   document.getElementById('desc-toggle').classList.toggle('active', descVisible);
+  localStorage.setItem('freetcode_desc_open', descVisible ? '1' : '0'); // remember the choice
   if (descVisible && editor) editor.layout();
 }
 
