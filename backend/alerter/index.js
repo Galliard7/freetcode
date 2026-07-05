@@ -92,13 +92,23 @@ function evaluate(env, u) {
 }
 
 async function notify(env, text) {
-  if (!env.ALERT_WEBHOOK) return;
-  // Generic JSON payload; adjust the shape to your channel if needed.
-  await fetch(env.ALERT_WEBHOOK, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-  }).catch(() => {});
+  // Primary channel: Telegram Bot API (reaches the public API from the edge).
+  if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
+    await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text, disable_web_page_preview: true }),
+    }).catch(() => {});
+    return;
+  }
+  // Fallback: generic JSON webhook (adjust shape to your channel if used).
+  if (env.ALERT_WEBHOOK) {
+    await fetch(env.ALERT_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    }).catch(() => {});
+  }
 }
 
 export default {

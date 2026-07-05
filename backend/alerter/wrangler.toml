@@ -9,14 +9,15 @@ compatibility_date = "2026-06-06"
 # Activation (maintainer, one-time):
 #   1. Create a CF API token with permission: Account > Account Analytics > Read
 #      (scope it to this account only). https://dash.cloudflare.com/profile/api-tokens
-#   2. cd backend/alerter
-#      npx wrangler secret put CF_API_TOKEN      # paste the token
-#      npx wrangler secret put ALERT_WEBHOOK      # your OpenClaw inbound webhook URL
-#   3. Set ACCOUNT_ID below (Cloudflare dashboard → any zone → Account ID).
+#   2. cd backend/alerter, set the three secrets:
+#      npx wrangler secret put CF_API_TOKEN        # the read-only Analytics token
+#      npx wrangler secret put TELEGRAM_BOT_TOKEN  # a Telegram bot token (OpenClaw main, or a dedicated bot)
+#      npx wrangler secret put TELEGRAM_CHAT_ID    # your Telegram user/chat id
+#   3. ACCOUNT_ID is pre-filled below.
 #   4. npx wrangler deploy
-#   5. Test now (don't wait for cron):
-#      npx wrangler dev --test-scheduled   then  curl "http://localhost:8787/__scheduled?cron=0+14+*+*+*"
-#      — or trigger from the dashboard → Workers → freetcode-alerter → Triggers.
+#   5. Smoke-test without waiting for cron: GET the deployed Worker's URL — it
+#      returns the current usage snapshot. (Scheduled runs stay silent unless a
+#      metric crosses WARN_PCT.)
 
 [triggers]
 # Free-tier caps are DAILY (reset 00:00 UTC), so check a few times a day to catch
