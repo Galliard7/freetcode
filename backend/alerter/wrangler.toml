@@ -19,7 +19,10 @@ compatibility_date = "2026-06-06"
 #      — or trigger from the dashboard → Workers → freetcode-alerter → Triggers.
 
 [triggers]
-crons = ["0 14 * * *"]   # 14:00 UTC daily (~9am America/Chicago)
+# Free-tier caps are DAILY (reset 00:00 UTC), so check a few times a day to catch
+# an intraday spike before it hits the wall — not once/day (which can only tell you
+# after the cap was already blown). Every 6h; alerter stays silent unless >WARN_PCT.
+crons = ["0 */6 * * *"]   # 00:00, 06:00, 12:00, 18:00 UTC
 
 [vars]
 ACCOUNT_ID = "88092c41a8191839896402a9b4208dcc"
