@@ -1,0 +1,32 @@
+name = "freetcode-alerter"
+main = "index.js"
+compatibility_date = "2026-06-06"
+
+# Daily free-tier quota watchdog for FreetCode. No public routes — cron only.
+# It queries the CF GraphQL Analytics API for the account's daily usage and
+# pings a webhook (OpenClaw/Telegram) when any metric crosses a threshold.
+#
+# Activation (maintainer, one-time):
+#   1. Create a CF API token with permission: Account > Account Analytics > Read
+#      (scope it to this account only). https://dash.cloudflare.com/profile/api-tokens
+#   2. cd backend/alerter
+#      npx wrangler secret put CF_API_TOKEN      # paste the token
+#      npx wrangler secret put ALERT_WEBHOOK      # your OpenClaw inbound webhook URL
+#   3. Set ACCOUNT_ID below (Cloudflare dashboard → any zone → Account ID).
+#   4. npx wrangler deploy
+#   5. Test now (don't wait for cron):
+#      npx wrangler dev --test-scheduled   then  curl "http://localhost:8787/__scheduled?cron=0+14+*+*+*"
+#      — or trigger from the dashboard → Workers → freetcode-alerter → Triggers.
+
+[triggers]
+crons = ["0 14 * * *"]   # 14:00 UTC daily (~9am America/Chicago)
+
+[vars]
+ACCOUNT_ID = "88092c41a8191839896402a9b4208dcc"
+# Free-plan daily caps (adjust if your plan changes).
+CAP_WORKERS_REQUESTS = "100000"
+CAP_D1_ROWS_READ     = "5000000"
+CAP_D1_ROWS_WRITTEN  = "100000"
+CAP_KV_READS         = "100000"
+WARN_PCT = "70"    # ping when any metric crosses this % of its cap
+CRIT_PCT = "90"    # mark URGENT at/above this %
