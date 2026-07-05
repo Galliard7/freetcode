@@ -30,9 +30,9 @@
   font-size: 12px; padding: 2px 8px; cursor: pointer; opacity: .55; line-height: 1.4;
 }
 .tutor-rate button:hover { opacity: 1; }
-.tutor-rate button.sel { opacity: 1; border-color: var(--accent, #6366f1); background: var(--accent-soft, rgba(99,102,241,.12)); }
+.tutor-rate button.sel { opacity: 1; border-color: var(--accent, #e0a458); background: var(--accent-soft, rgba(224,164,88,.12)); }
 .tutor-share-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; cursor: pointer; font-size: 13px; }
-.tutor-share-row input { accent-color: var(--accent, #6366f1); }
+.tutor-share-row input { accent-color: var(--accent, #e0a458); }
 .tutor-share-note { font-size: 12px; color: var(--fg-muted, #8a93a6); margin: 0 0 10px; line-height: 1.5; }
 
 /* ── state machine: gate · loading · ready ── */

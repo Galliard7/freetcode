@@ -24,7 +24,7 @@ const SlidingWindowVisualizer = (() => {
   const C = {
     bg: '#0f0f0f', panel: '#161616', border: '#2a2a2a',
     text: '#e0e0e0', muted: '#666',
-    accent: '#6366f1', accentSoft: 'rgba(99,102,241,0.15)',
+    accent: '#e0a458', accentSoft: 'rgba(224,164,88,0.15)',
     window: '#8b5cf6', windowSoft: 'rgba(139,92,246,0.12)', windowBorder: 'rgba(139,92,246,0.4)',
     left: '#3b82f6',
     right: '#f59e0b',
@@ -145,7 +145,7 @@ const SlidingWindowVisualizer = (() => {
             <div style="font:11px 'JetBrains Mono',monospace;color:${C.muted}">window: <span style="color:${C.window};font-weight:600">"${cur.r >= 0 ? STR.slice(cur.l, cur.r + 1) : ''}"</span></div>
             <div style="font:11px 'JetBrains Mono',monospace;color:${C.muted}">best: <span style="color:${C.best};font-weight:600">${cur.result}</span></div>
           </div>
-          <div style="margin-top:6px;padding:8px;background:${cur.type === 'conflict' ? C.conflictSoft : C.accentSoft};border:1px solid ${cur.type === 'conflict' ? C.conflict : 'rgba(99,102,241,0.3)'};border-radius:4px;font:11px 'JetBrains Mono',monospace;color:${cur.type === 'conflict' ? C.conflict : C.accent}">› ${cur.msg}</div>
+          <div style="margin-top:6px;padding:8px;background:${cur.type === 'conflict' ? C.conflictSoft : C.accentSoft};border:1px solid ${cur.type === 'conflict' ? C.conflict : 'rgba(224,164,88,0.3)'};border-radius:4px;font:11px 'JetBrains Mono',monospace;color:${cur.type === 'conflict' ? C.conflict : C.accent}">› ${cur.msg}</div>
         </div>
         <div style="background:${C.panel};border:1px solid ${C.border};border-radius:6px;padding:8px;display:flex;flex-direction:column">
           <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:${C.muted};margin-bottom:6px;font-weight:600">Code</div>

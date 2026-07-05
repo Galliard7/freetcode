@@ -42,7 +42,7 @@
   width: 36px; height: 24px; border-radius: 5px; flex-shrink: 0;
   border: 1px solid rgba(128,128,128,0.25);
 }
-.sw-refined { background: linear-gradient(135deg, #0d1016 52%, #7c83ff); }
+.sw-refined { background: linear-gradient(135deg, #0d1016 52%, #e0a458); }
 .sw-brutal  { background: linear-gradient(135deg, #000 52%, #37ff8b); }
 .sw-glass   { background: linear-gradient(135deg, #16182a 38%, #8b5cf6 75%, #ec4899); }
 .sw-warm    { background: linear-gradient(135deg, #f6f1e7 52%, #c2683f); }
@@ -50,23 +50,23 @@
 /* ════════════════════════ 01 · REFINED DARK ════════════════════════ */
 html[data-theme="refined-dark"] {
   --bg-app:#0b0d12; --bg-sidebar:#0f1218; --bg-editor:#0d1016; --bg-panel:#0c0f14; --bg-header:#10141b;
-  --bg-hover:rgba(255,255,255,0.05); --bg-active:rgba(124,131,255,0.14); --bg-input:#141925;
+  --bg-hover:rgba(255,255,255,0.05); --bg-active:rgba(224,164,88,0.14); --bg-input:#141925;
   --fg-primary:#d7dce5; --fg-secondary:#8b93a3; --fg-muted:#5a6373; --fg-strong:#f4f6fa;
-  --accent:#7c83ff; --accent-hover:#a78bfa; --accent-soft:rgba(124,131,255,0.16);
+  --accent:#e0a458; --accent-hover:#f0c078; --accent-soft:rgba(224,164,88,0.16);
   --easy:#34d399; --medium:#fbbf24; --hard:#fb7185;
   --border:rgba(255,255,255,0.06); --border-strong:rgba(255,255,255,0.12);
   --radius:7px; --radius-lg:11px;
 }
 html[data-theme="refined-dark"] .btn-primary {
-  background: linear-gradient(135deg,#7c83ff,#8b8bff);
-  box-shadow: 0 2px 10px rgba(124,131,255,0.4), 0 1px 0 rgba(255,255,255,0.3) inset;
+  background: linear-gradient(135deg,#e0a458,#f0c078);
+  box-shadow: 0 2px 10px rgba(224,164,88,0.4), 0 1px 0 rgba(255,255,255,0.3) inset;
 }
 html[data-theme="refined-dark"] .progress-fill {
-  background: linear-gradient(90deg,#7c83ff,#a78bfa);
-  box-shadow: 0 0 10px rgba(124,131,255,0.6);
+  background: linear-gradient(90deg,#e0a458,#f0c078);
+  box-shadow: 0 0 10px rgba(224,164,88,0.6);
 }
 html[data-theme="refined-dark"] .problem-item.active {
-  box-shadow: inset 3px 0 0 #7c83ff;
+  box-shadow: inset 3px 0 0 #e0a458;
 }
 
 /* ════════════════════════ 02 · BRUTALIST ═══════════════════════════ */

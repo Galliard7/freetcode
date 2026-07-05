@@ -24,7 +24,7 @@ const TwoPointersVisualizer = (() => {
   const C = {
     bg: '#0f0f0f', panel: '#161616', border: '#2a2a2a',
     text: '#e0e0e0', muted: '#666',
-    accent: '#6366f1', accentSoft: 'rgba(99,102,241,0.15)',
+    accent: '#e0a458', accentSoft: 'rgba(224,164,88,0.15)',
     left: '#3b82f6', leftSoft: 'rgba(59,130,246,0.12)',
     right: '#ef4444', rightSoft: 'rgba(239,68,68,0.12)',
     water: 'rgba(59,130,246,0.15)', waterBorder: 'rgba(59,130,246,0.4)',
@@ -120,7 +120,7 @@ const TwoPointersVisualizer = (() => {
             <div style="font:11px 'JetBrains Mono',monospace;color:${C.muted}">area: <span style="color:${C.text};font-weight:600">${cur.area}</span></div>
             <div style="font:11px 'JetBrains Mono',monospace;color:${C.muted}">best: <span style="color:${C.best};font-weight:600">${cur.best}</span></div>
           </div>
-          <div style="margin-top:6px;padding:8px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:4px;font:11px 'JetBrains Mono',monospace;color:${C.accent}">› ${cur.msg}</div>
+          <div style="margin-top:6px;padding:8px;background:rgba(224,164,88,0.08);border:1px solid rgba(224,164,88,0.3);border-radius:4px;font:11px 'JetBrains Mono',monospace;color:${C.accent}">› ${cur.msg}</div>
         </div>
         <div style="background:${C.panel};border:1px solid ${C.border};border-radius:6px;padding:8px;display:flex;flex-direction:column">
           <div style="font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:${C.muted};margin-bottom:6px;font-weight:600">Code</div>

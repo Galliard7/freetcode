@@ -32,7 +32,7 @@ const DFSVisualizer = (() => {
   const C = {
     bg: '#0f0f0f', panel: '#161616', border: '#2a2a2a',
     text: '#e0e0e0', muted: '#666',
-    accent: '#6366f1', accentSoft: 'rgba(99,102,241,0.15)',
+    accent: '#e0a458', accentSoft: 'rgba(224,164,88,0.15)',
     current: '#f59e0b', currentSoft: 'rgba(245,158,11,0.12)',
     visited: '#22c55e', visitedSoft: 'rgba(34,197,94,0.1)',
     stack: '#c084fc', stackSoft: 'rgba(192,132,252,0.1)',
