@@ -117,6 +117,9 @@ export default {
       const usage = await collect(env);
       const { worst, breaches, lines, errors } = evaluate(env, usage);
       if (errors.length) {
+        // Token not configured yet → setup state, not an incident. Stay silent
+        // (avoids a nag every 6h until CF_API_TOKEN is set).
+        if (!env.CF_API_TOKEN) return;
         await notify(env, `⚠️ FreetCode alerter couldn't read some usage (${usage.day} UTC):\n${errors.join('\n')}\n\nPartial:\n${lines.join('\n')}`);
         return;
       }
