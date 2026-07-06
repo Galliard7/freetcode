@@ -213,6 +213,11 @@
         <button class="theme-swatch" data-theme="glassy"><span class="sw sw-glass"></span><span>Glassy</span></button>
         <button class="theme-swatch" data-theme="warm"><span class="sw sw-warm"></span><span>Warm Paper</span></button>
       </div>
+      <h3>Your Activity</h3>
+      <div class="activity-summary" id="activity-summary"></div>
+      <div class="activity-grid-wrap"><div class="activity-grid" id="activity-grid"></div></div>
+      <p class="activity-note">This activity log lives only in this browser — clearing your browser data erases it. Use <strong>Export All Data</strong> below to back it up.</p>
+
       <h3>Data Management</h3>
       <p>Your solutions and progress are saved in this browser's local storage.</p>
       <div class="settings-stats" id="settings-stats"></div>
@@ -1012,12 +1017,51 @@ document.getElementById('reset-code').addEventListener('click', () => {
   if (item) item.classList.remove('has-saved');
 });
 
+// ─── Activity log (private, on-device) ───
+// A GitHub-style heatmap of daily submissions. Lives only in localStorage
+// (freetcode_activity: { "YYYY-MM-DD": count }); included in Export All Data.
+function localDay(d) {
+  const x = d || new Date();
+  return new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+function getActivity() {
+  try { return JSON.parse(localStorage.getItem('freetcode_activity') || '{}'); } catch { return {}; }
+}
+function recordActivity() {
+  const act = getActivity();
+  const key = localDay();
+  act[key] = (act[key] || 0) + 1;
+  localStorage.setItem('freetcode_activity', JSON.stringify(act));
+}
+function activityLevel(n) { return !n ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4; }
+function renderActivity() {
+  const act = getActivity(), WEEKS = 26;
+  const end = new Date(localDay() + 'T00:00:00');
+  const start = new Date(end.getTime() - (WEEKS * 7 - 1) * 86400000);
+  start.setDate(start.getDate() - start.getDay());            // back to Sunday
+  const loopEnd = new Date(end); loopEnd.setDate(loopEnd.getDate() + (6 - loopEnd.getDay()));
+  let grid = '', col = '', i = 0, activeDays = 0, subs = 0;
+  for (let cur = new Date(start); cur <= loopEnd; cur = new Date(cur.getTime() + 86400000)) {
+    const key = localDay(cur), n = act[key] || 0, future = cur > end;
+    if (n) { activeDays++; subs += n; }
+    const title = future ? '' : `${n} submission${n !== 1 ? 's' : ''} · ${key}`;
+    col += `<div class="act-cell act-l${future ? '-x' : activityLevel(n)}" title="${title}"></div>`;
+    if (++i % 7 === 0) { grid += `<div class="act-col">${col}</div>`; col = ''; }
+  }
+  document.getElementById('activity-grid').innerHTML = grid;
+  const sum = document.getElementById('activity-summary');
+  if (sum) sum.innerHTML = activeDays
+    ? `<strong>${activeDays}</strong> active day${activeDays !== 1 ? 's' : ''} · <strong>${subs}</strong> submission${subs !== 1 ? 's' : ''} in the last ${WEEKS} weeks`
+    : `No activity yet — solve a problem and it'll fill in here.`;
+}
+
 // ─── Settings Modal (Data Management) ───
 document.getElementById('settings-btn').addEventListener('click', () => {
   const statsEl = document.getElementById('settings-stats');
   const solCount = Object.keys(savedSolutions).length;
   const solvedCount = solvedSet.size;
   statsEl.innerHTML = `<div style="font-size:12px;color:var(--fg-secondary);margin-bottom:12px">${solCount} saved solution${solCount !== 1 ? 's' : ''} · ${solvedCount} problem${solvedCount !== 1 ? 's' : ''} marked solved</div>`;
+  renderActivity();
   document.getElementById('settings-modal').classList.add('show');
 });
 document.getElementById('settings-close').addEventListener('click', () => {
@@ -1094,7 +1138,7 @@ document.getElementById('export-solutions').addEventListener('click', () => {
   downloadJSON({ solutions: savedSolutions }, 'freetcode-solutions.json');
 });
 document.getElementById('export-progress').addEventListener('click', () => {
-  downloadJSON({ solutions: savedSolutions, solved: [...solvedSet] }, 'freetcode-all-data.json');
+  downloadJSON({ solutions: savedSolutions, solved: [...solvedSet], activity: getActivity() }, 'freetcode-all-data.json');
 });
 document.getElementById('import-solutions').addEventListener('click', () => {
   document.getElementById('import-file-input').click();
@@ -1113,6 +1157,11 @@ document.getElementById('import-file-input').addEventListener('change', (e) => {
       if (Array.isArray(data.solved)) {
         data.solved.forEach(n => solvedSet.add(n));
         localStorage.setItem('freetcode_solved', JSON.stringify([...solvedSet]));
+      }
+      if (data.activity && typeof data.activity === 'object') {
+        const act = getActivity();
+        for (const [k, v] of Object.entries(data.activity)) act[k] = Math.max(act[k] || 0, Number(v) || 0);
+        localStorage.setItem('freetcode_activity', JSON.stringify(act));
       }
       renderProblemList(document.getElementById('problem-search').value);
       if (currentProblem) selectProblem(currentProblem);
@@ -1411,6 +1460,7 @@ async function submitCode() {
     // graded problem: judge + benchmark them locally, but never record public stats.
     const recordStats = Stats.enabled() && currentProblem.num > 0;
     let verdict = corr.error ? 'error' : (corr.correct ? 'accepted' : 'wrong');
+    recordActivity();   // count this submission in the on-device activity log
     let finalScore = null;          // composite (time+space) — drives stats + board
     let tRatio = null, sRatio = null;
 
@@ -1475,6 +1525,7 @@ async function submitCode() {
         await maybeArcade(currentProblem.num, finalScore, tRatio, sRatio);
       }
     }
+    if (corr.correct) appendShareButton(currentProblem);
     window.__ocLastVerdict = { problem: currentProblem.num, verdict, score: finalScore, tRatio, sRatio };
     outputEl.scrollTop = outputEl.scrollHeight;
   } catch (e) {
@@ -1487,6 +1538,33 @@ async function submitCode() {
   }
 }
 submitBtn.addEventListener('click', submitCode);
+
+// ─── Share a solve (X / native share sheet) ───
+function shareSolveText(problem) {
+  const title = problem.num > 0 ? `#${problem.num} ${problem.title}` : problem.title;
+  return `Just solved "${title}" on FreetCode — free, no-login coding practice that runs entirely in your browser. 🧑‍💻`;
+}
+function appendShareButton(problem) {
+  const wrap = document.createElement('div');
+  wrap.className = 'share-solve';
+  const btn = document.createElement('button');
+  btn.className = 'btn share-btn';
+  btn.textContent = '𝕏  Share this solve';
+  btn.onclick = () => shareSolve(problem);
+  wrap.appendChild(btn);
+  outputEl.appendChild(wrap);
+}
+async function shareSolve(problem) {
+  const text = shareSolveText(problem);
+  const url = 'https://freetcode.com';
+  if (navigator.share) {                       // mobile: native share sheet (incl. X)
+    try { await navigator.share({ text, url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  // desktop / no Web Share → open the X compose intent
+  const intent = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  window.open(intent, '_blank', 'noopener');
+}
 
 // ─── Arcade board (Phase 4) ───
 async function maybeArcade(problem, score, tRatio, sRatio) {

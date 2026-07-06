@@ -896,6 +896,25 @@ kbd {
 
 /* ═══ Responsive — Mobile ═══ */
 
+/* ═══ Share-a-solve button (output panel) ═══ */
+.share-solve { margin: 12px 0 4px; }
+.share-btn { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.share-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+/* ═══ Activity heatmap (Settings → Your Activity) ═══ */
+.activity-summary { font-size: 12px; color: var(--fg-secondary); margin: 2px 0 8px; }
+.activity-summary strong { color: var(--fg-strong); }
+.activity-grid-wrap { overflow-x: auto; padding-bottom: 6px; }
+.activity-grid { display: flex; gap: 3px; width: max-content; }
+.act-col { display: flex; flex-direction: column; gap: 3px; }
+.act-cell { width: 11px; height: 11px; border-radius: 2px; background: rgba(255,255,255,0.05); }
+.act-l1 { background: rgba(224,164,88,0.30); }
+.act-l2 { background: rgba(224,164,88,0.55); }
+.act-l3 { background: rgba(224,164,88,0.80); }
+.act-l4 { background: rgba(224,164,88,1); }
+.act-l-x { background: transparent; }
+.activity-note { font-size: 11px; color: var(--fg-muted); line-height: 1.5; margin: 4px 0 4px; }
+
 /* Sidebar backdrop (mobile only, injected by JS) */
 .sidebar-backdrop {
   display: none;
