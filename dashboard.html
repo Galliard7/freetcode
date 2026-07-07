@@ -17,7 +17,7 @@
 <meta name="twitter:image" content="https://freetcode.com/assets/share-card.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e0a458'/><text x='50' y='68' text-anchor='middle' font-size='50' font-weight='800' fill='white'>&lt;/&gt;</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <link rel="stylesheet" href="themes.css?v=3">
 <script>
   (function(){
@@ -57,10 +57,19 @@
   .feed-row .ftitle .fnum { color: var(--fg-muted, #8a93a6); font-family: var(--font-mono, monospace); margin-right: 6px; }
   .feed-row .fratio { font-family: var(--font-mono, monospace); font-size: 12px; color: var(--fg-muted, #8a93a6); }
   .feed-row .fago { color: var(--fg-muted, #8a93a6); font-size: 12px; white-space: nowrap; }
-  .spark-wrap { margin: 0 0 32px; }
-  .spark { display: flex; align-items: flex-end; gap: 3px; height: 44px; }
-  .spark > div { flex: 1; min-width: 4px; background: var(--accent, #e0a458); border-radius: 2px 2px 0 0; opacity: .85; }
-  .spark-lbl { font-size: 11px; color: var(--fg-muted, #8a93a6); margin-top: 6px; }
+  .chart { margin: 4px 0 34px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; gap: 12px; }
+  .chart-head .ttl { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--fg-muted, #8a93a6); }
+  .chart-head .peak { font-size: 12px; color: var(--fg-muted, #8a93a6); white-space: nowrap; }
+  .chart-head .peak b { color: var(--fg-strong, #e6e9ef); font-family: var(--font-mono, monospace); }
+  .spark { display: flex; align-items: flex-end; gap: 2px; height: 132px; padding: 6px 0 0; border-bottom: 1px solid var(--border-strong, #232a38); }
+  .spark > div { flex: 1; min-width: 3px; background: var(--accent, #e0a458); border-radius: 3px 3px 0 0; opacity: .9; transition: opacity .1s; }
+  .spark > div:hover { opacity: 1; }
+  .spark > div.zero { background: rgba(255,255,255,0.06); border-radius: 3px; }
+  .xaxis { display: flex; justify-content: space-between; font-size: 11px; color: var(--fg-muted, #8a93a6); margin-top: 8px; font-family: var(--font-mono, monospace); }
+  .lb-lookup { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .lb-lookup input { flex: 1; min-width: 220px; padding: 9px 12px; background: var(--bg-input, #14171f); border: 1px solid var(--border, #232a38); border-radius: 8px; color: var(--fg-primary, #e6e9ef); font-size: 13px; outline: none; }
+  .lb-lookup input:focus { border-color: var(--accent, #e0a458); }
 </style>
 </head>
 <body>
@@ -69,7 +78,7 @@
     <div class="logo-mark">&lt;/&gt;</div>
     <h1>Community Stats <span class="badge" id="env-badge">v2</span></h1>
   </div>
-  <div class="sub">Anonymous, aggregate submission stats. No accounts, no tracking. · <a href="./">← Back to FreetCode</a></div>
+  <div class="sub">Anonymous, aggregate community stats — no accounts, no tracking. Your own progress is private and stored on your device. · <a href="me.html">📈 My Stats</a> · <a href="./">← Back to FreetCode</a></div>
 
   <div id="content"><div class="empty">Loading…</div></div>
 </div>
@@ -79,6 +88,7 @@
 (async function () {
   const content = document.getElementById('content');
   const _badge = document.getElementById('env-badge');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   if (Stats.ENV === 'prod') _badge.style.display = 'none'; else _badge.textContent = Stats.ENV;
 
   if (!Stats.enabled()) {
@@ -118,8 +128,9 @@
   if (traffic && traffic.series) {
     const byDay = {};
     for (const d of traffic.series) byDay[d.day] = d;
+    const N = 30;
     const days = [];
-    for (let i = 13; i >= 0; i--) {
+    for (let i = N - 1; i >= 0; i--) {
       const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
       const d = byDay[day] || {};
       days.push({ day, visitors: d.visitors || 0, pageviews: d.pageviews || 0 });
@@ -130,9 +141,11 @@
     const max = Math.max(1, ...days.map((d) => d.visitors));
     let bars = '';
     for (const d of days) {
-      const h = Math.max(4, Math.round(d.visitors / max * 100));
-      bars += `<div style="height:${h}%" title="${d.day} (UTC): ${d.visitors} visitors, ${d.pageviews} pageviews"></div>`;
+      const h = d.visitors ? Math.max(6, Math.round(d.visitors / max * 100)) : 3;
+      const cls = d.visitors ? '' : ' class="zero"';
+      bars += `<div${cls} style="height:${h}%" title="${d.day} (UTC): ${d.visitors} visitors · ${d.pageviews} pageviews"></div>`;
     }
+    const md = (s) => s.slice(5);   // MM-DD
     html += `<div class="sec-title">Traffic</div>
     <div class="cards">
       <div class="card"><div class="big">${today.visitors.toLocaleString()}</div><div class="lbl">Visitors today</div></div>
@@ -140,12 +153,29 @@
       <div class="card" title="Sum of daily unique visitors — identities rotate daily by design, so cross-day uniques are unknowable"><div class="big">${v30.toLocaleString()}</div><div class="lbl">Visitors (30d)</div></div>
       <div class="card"><div class="big">${p30.toLocaleString()}</div><div class="lbl">Pageviews (30d)</div></div>
     </div>
-    <div class="spark-wrap"><div class="spark">${bars}</div><div class="spark-lbl">Daily visitors — last 14 days (UTC)</div></div>`;
+    <div class="chart">
+      <div class="chart-head"><span class="ttl">Daily visitors · last ${N} days (UTC)</span><span class="peak">peak <b>${max.toLocaleString()}</b></span></div>
+      <div class="spark">${bars}</div>
+      <div class="xaxis"><span>${md(days[0].day)}</span><span>${md(days[Math.floor(N / 2)].day)}</span><span>today</span></div>
+    </div>`;
   }
+
+  // ── Arcade leaderboard lookup (idea C): search any problem → its top-30 board.
+  //    Reuses the existing /leaderboard endpoint (per-IP rate-limited server-side,
+  //    cached 60s). Lazy — one request fires only when a board is actually opened. ──
+  const lbOptions = Object.entries(titles).map(([num, title]) => `<option value="#${num} ${esc(title)}">`).join('');
+  html += `<div class="sec-title">Arcade leaderboards</div>
+    <div class="lb-lookup">
+      <input id="lb-q" list="lb-list" placeholder="Search any problem to see its top scores…" autocomplete="off">
+      <datalist id="lb-list">${lbOptions}</datalist>
+      <button class="btn" id="lb-go">View board</button>
+    </div>
+    <div id="lb-result" style="margin:12px 0 32px"></div>`;
 
   if (!data.problems.length) {
     html += '<div class="empty">No submissions yet — be the first.</div>';
     content.innerHTML = html;
+    wireLeaderboard(titles);
     return;
   }
 
@@ -171,7 +201,7 @@
       const verb = ok ? 'solved' : 'tried';
       const ratio = (ok && e.ratio != null) ? `<span class="fratio">${Number(e.ratio).toFixed(1)}× vs optimal</span>` : '';
       feed += `<div class="feed-row">${icon}
-        <span class="ftitle">${verb} <span class="fnum">#${e.problem}</span>${title}</span>
+        <span class="ftitle">${verb} <span class="fnum">#${e.problem}</span>${esc(title)}</span>
         ${ratio}
         <span class="fago">${ago(e.ts)}</span>
       </div>`;
@@ -200,7 +230,7 @@
     const mtxt = p.median_tries != null ? p.median_tries : '—';
     html += `<tr>
       <td class="num muted">${p.problem}</td>
-      <td>${title}</td>
+      <td>${esc(title)}</td>
       <td class="num">${(p.attempts || 0).toLocaleString()}</td>
       <td class="num">${(p.attempters || 0).toLocaleString()}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="bar"><span style="width:${rate}%"></span></div><span class="${rateCls}">${rate}%</span></div></td>
@@ -212,6 +242,39 @@
   }
   html += '</tbody></table>';
   content.innerHTML = html;
+  wireLeaderboard(titles);
+
+  // Look up any problem's arcade board on demand (one request, only when opened).
+  function wireLeaderboard(titles) {
+    const inp = document.getElementById('lb-q'), go = document.getElementById('lb-go'), out = document.getElementById('lb-result');
+    if (!inp || !go || !out) return;
+    let busy = false;
+    async function lookup() {
+      const m = inp.value.trim().match(/#?(\d+)/);
+      if (!m) { out.innerHTML = '<span class="muted">Type a problem number, or pick one from the list.</span>'; return; }
+      if (busy) return; busy = true;
+      const num = Number(m[1]), title = titles[num] || ('Problem ' + num);
+      out.innerHTML = '<span class="muted">Loading board…</span>';
+      let rows = null;
+      try { rows = await Stats.getLeaderboard(num); } catch {}
+      busy = false;
+      if (!rows || !rows.length) { out.innerHTML = `<div class="empty">No arcade scores yet for <b>#${num} ${esc(title)}</b> — be the first to set one.</div>`; return; }
+      const rx = (v) => v != null ? Number(v).toFixed(1) + '×' : '—';
+      let t = `<div style="font-weight:600;margin-bottom:10px">🏆 #${num} ${esc(title)} — top ${rows.length}</div>
+        <table><thead><tr><th>#</th><th>Player</th><th class="num" title="composite score, lower is better">Score</th><th class="num" title="time vs optimal">Time</th><th class="num" title="space vs optimal">Space</th><th class="num">When</th></tr></thead><tbody>`;
+      rows.forEach((r, i) => {
+        t += `<tr><td class="num muted">${i + 1}</td>
+          <td style="font-family:var(--font-mono, monospace)">${esc(r.initials || '???')}</td>
+          <td class="num">${r.ratio != null ? Number(r.ratio).toFixed(2) + '×' : '—'}</td>
+          <td class="num">${rx(r.t_ratio)}</td><td class="num">${rx(r.s_ratio)}</td>
+          <td class="num muted">${ago(r.ts)}</td></tr>`;
+      });
+      out.innerHTML = t + '</tbody></table>';
+    }
+    go.addEventListener('click', lookup);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') lookup(); });
+    inp.addEventListener('change', () => { if (/#?\d+/.test(inp.value)) lookup(); });   // datalist pick auto-loads
+  }
 })();
 </script>
 <!-- Cloudflare Web Analytics: injected automatically by Cloudflare for the

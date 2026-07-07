@@ -399,7 +399,12 @@ export default {
       }
       if (url.pathname === '/stats' && request.method === 'GET') return await handleStats(url, db);
       if (url.pathname === '/recent' && request.method === 'GET') return await handleRecent(url, db);
-      if (url.pathname === '/leaderboard' && request.method === 'GET') return await handleLeaderboard(url, db);
+      if (url.pathname === '/leaderboard' && request.method === 'GET') {
+        // Per-IP throttle: the board is now looked up on demand (dashboard search),
+        // not just once post-solve — cap read-spam to protect the free tier.
+        if (env.RL_CONTENT && !(await env.RL_CONTENT.limit({ key: ip })).success) return tooMany();
+        return await handleLeaderboard(url, db);
+      }
       if (url.pathname === '/score' && request.method === 'POST') {
         if (env.RL_WRITE && !(await env.RL_WRITE.limit({ key: ip })).success) return tooMany();
         return await handleScore(request, db, env, ip);

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FreetCode — My Stats</title>
+<meta name="description" content="Your private FreetCode progress — activity, solved problems, complexity and rank. Stored only in your browser, no account.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://freetcode.com/me.html">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e0a458'/><text x='50' y='68' text-anchor='middle' font-size='50' font-weight='800' fill='white'>&lt;/&gt;</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="themes.css?v=3">
+<script>
+  (function(){
+    var THEMES = ['refined-dark','brutalist','glassy','warm'];
+    var t = localStorage.getItem('freetcode_theme');
+    document.documentElement.dataset.theme = THEMES.indexOf(t) >= 0 ? t : 'refined-dark';
+  })();
+</script>
+<style>
+  body { margin: 0; background: var(--bg-base, #0b0d12); color: var(--fg-primary, #e6e9ef); font-family: var(--font-ui, 'Inter', sans-serif); }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 28px 20px 80px; }
+  .top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .logo-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--accent, #e0a458); color: #fff; display: grid; place-items: center; font-weight: 800; font-family: var(--font-mono, monospace); }
+  h1 { font-size: 22px; margin: 0; }
+  .sub { color: var(--fg-muted, #8a93a6); font-size: 13px; margin: 2px 0 20px; }
+  .sub a { color: var(--accent, #e0a458); text-decoration: none; }
+  .device-note { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 14px; margin: 0 0 24px;
+    border: 1px solid var(--border-strong, #232a38); border-radius: 12px; background: rgba(224,164,88,0.06); font-size: 12.5px; color: var(--fg-secondary, #b7bfce); line-height: 1.5; }
+  .device-note .dn-text { flex: 1; min-width: 240px; }
+  .device-note strong { color: var(--fg-strong, #e6e9ef); }
+  .device-note .dn-actions { display: flex; gap: 8px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .card { padding: 16px; border: 1px solid var(--border-strong, #232a38); border-radius: 12px; background: rgba(255,255,255,0.02); }
+  .card .big { font-size: 28px; font-weight: 800; }
+  .card .lbl { color: var(--fg-muted, #8a93a6); font-size: 12px; margin-top: 4px; }
+  .sec-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--fg-muted, #8a93a6); margin: 0 0 12px; }
+  .diffbar { display: flex; gap: 8px; flex-wrap: wrap; margin: -8px 0 24px; }
+  .diffbar .chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-strong, #232a38); color: var(--fg-secondary, #b7bfce); }
+  .diffbar .chip b { color: var(--fg-strong, #e6e9ef); }
+  /* activity heatmap (mirrors app .act-* so it reads identically) */
+  .act-wrap { overflow-x: auto; padding-bottom: 6px; margin-bottom: 6px; }
+  .act-grid { display: flex; gap: 3px; min-width: min-content; }
+  .act-col { display: flex; flex-direction: column; gap: 3px; }
+  .act-cell { width: 12px; height: 12px; border-radius: 3px; background: rgba(255,255,255,0.05); }
+  .act-l1 { background: rgba(224,164,88,0.30); } .act-l2 { background: rgba(224,164,88,0.55); }
+  .act-l3 { background: rgba(224,164,88,0.80); } .act-l4 { background: rgba(224,164,88,1); }
+  .act-l-x { background: transparent; }
+  .act-summary { font-size: 12.5px; color: var(--fg-secondary, #b7bfce); margin: 8px 0 30px; }
+  .act-summary strong { color: var(--fg-strong, #e6e9ef); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .controls input, .controls select { padding: 8px 12px; background: var(--bg-input, #14171f); border: 1px solid var(--border, #232a38);
+    border-radius: 8px; color: var(--fg-primary, #e6e9ef); font-size: 13px; font-family: inherit; outline: none; }
+  .controls input { flex: 1; min-width: 180px; }
+  .controls input:focus, .controls select:focus { border-color: var(--accent, #e0a458); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border-strong, #232a38); }
+  th { color: var(--fg-muted, #8a93a6); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+  td.num, th.num { text-align: right; font-family: var(--font-mono, monospace); }
+  td .d-Easy { color: var(--easy, #10b981); } td .d-Medium { color: var(--accent, #e0a458); } td .d-Hard { color: var(--hard, #ef4444); }
+  .fnum { color: var(--fg-muted, #8a93a6); font-family: var(--font-mono, monospace); margin-right: 6px; }
+  .muted { color: var(--fg-muted, #8a93a6); }
+  .empty { padding: 40px; text-align: center; color: var(--fg-muted, #8a93a6); border: 1px dashed var(--border-strong, #232a38); border-radius: 12px; }
+  .empty a { color: var(--accent, #e0a458); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="logo-mark">&lt;/&gt;</div>
+    <h1>My Stats</h1>
+  </div>
+  <div class="sub">Your private progress — stored only in this browser. · <a href="./">← Back to FreetCode</a> · <a href="dashboard.html">Community stats →</a></div>
+
+  <div class="device-note">
+    <div class="dn-text">🔒 <strong>No account, no login.</strong> Everything on this page lives only in this browser — clearing your site data erases it. Back it up (or move to another device) with Export.</div>
+    <div class="dn-actions">
+      <button class="btn" id="export-btn">⬇ Export backup</button>
+      <button class="btn" id="import-btn">⬆ Import</button>
+      <input type="file" id="import-file" accept="application/json" style="display:none">
+    </div>
+  </div>
+
+  <div id="content"><div class="empty">Loading your progress…</div></div>
+</div>
+
+<script src="stats.js?v=6"></script>
+<script>
+(function () {
+  const content = document.getElementById('content');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // ── on-device state (localStorage only — no network for any of this) ──
+  const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+  const solvedSet = new Set(lsGet('freetcode_solved', []));
+  const solutions = lsGet('freetcode_user_solutions', {}) || {};
+  const activity  = lsGet('freetcode_activity', {}) || {};
+  const perf      = lsGet('freetcode_perf', {}) || {};
+
+  // problem metadata (num -> {title, difficulty}). Prefer the app's cached index
+  // (0 network); fall back to the cached content endpoint only if it's missing.
+  function metaFrom(idx) {
+    const meta = {};
+    for (const p of (idx || [])) meta[p.num] = { title: p.title, difficulty: p.difficulty || 'Easy' };
+    return meta;
+  }
+  function loadMeta() {
+    const cached = lsGet('freetcode_index', null);
+    if (Array.isArray(cached) && cached.length) return Promise.resolve(metaFrom(cached));
+    if (window.Stats && Stats.enabled()) {
+      return fetch(Stats.base() + '/problems/index').then(r => r.ok ? r.json() : []).then(metaFrom).catch(() => ({}));
+    }
+    return Promise.resolve({});
+  }
+
+  // ── activity heatmap (same look/logic as the in-app version) ──
+  const localDay = (d) => { const x = d || new Date(); return new Date(x.getTime() - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+  const level = (n) => !n ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4;
+  function renderActivity() {
+    const WEEKS = 26;
+    const end = new Date(localDay() + 'T00:00:00');
+    const start = new Date(end.getTime() - (WEEKS * 7 - 1) * 86400000);
+    start.setDate(start.getDate() - start.getDay());
+    const loopEnd = new Date(end); loopEnd.setDate(loopEnd.getDate() + (6 - loopEnd.getDay()));
+    let grid = '', col = '', i = 0, activeDays = 0, subs = 0;
+    for (let cur = new Date(start); cur <= loopEnd; cur = new Date(cur.getTime() + 86400000)) {
+      const key = localDay(cur), n = Number(activity[key]) || 0, future = cur > end;
+      if (n) { activeDays++; subs += n; }
+      const title = future ? '' : `${n} submission${n !== 1 ? 's' : ''} · ${key}`;
+      col += `<div class="act-cell act-l${future ? '-x' : level(n)}" title="${esc(title)}"></div>`;
+      if (++i % 7 === 0) { grid += `<div class="act-col">${col}</div>`; col = ''; }
+    }
+    const summary = activeDays
+      ? `<strong>${activeDays}</strong> active day${activeDays !== 1 ? 's' : ''} · <strong>${subs}</strong> submission${subs !== 1 ? 's' : ''} in the last ${WEEKS} weeks`
+      : `No activity yet — <a href="./">solve a problem</a> and it'll fill in here.`;
+    return { grid, summary };
+  }
+
+  // ── the "your problems" table (union of solved + attempted-with-perf + saved) ──
+  function ratioTxt(v) { return v == null ? '—' : `${Number(v).toFixed(1)}×`; }
+  function rankTxt(p) {
+    if (!p || p.rank == null || p.total == null) return '<span class="muted">—</span>';
+    const pct = p.pct != null ? ` · top ${Math.max(1, Math.round(p.pct))}%` : '';
+    return `#${p.rank}<span class="muted"> / ${p.total}${pct}</span>`;
+  }
+
+  loadMeta().then((meta) => {
+    // build the row set
+    const nums = new Set();
+    solvedSet.forEach(n => nums.add(Number(n)));
+    Object.keys(perf).forEach(n => nums.add(Number(n)));
+    Object.keys(solutions).forEach(n => nums.add(Number(n)));
+    const rows = [...nums].filter(n => n > 0).map(n => ({
+      num: n,
+      title: (meta[n] && meta[n].title) || ('Problem ' + n),
+      difficulty: (meta[n] && meta[n].difficulty) || '—',
+      solved: solvedSet.has(n) || solvedSet.has(String(n)),
+      perf: perf[n] || null,
+      saved: !!solutions[n],
+    }));
+
+    // summary numbers
+    const solvedCount = rows.filter(r => r.solved).length;
+    const subs = Object.values(activity).reduce((s, v) => s + (Number(v) || 0), 0);
+    const activeDays = Object.values(activity).filter(v => Number(v) > 0).length;
+    const savedCount = Object.keys(solutions).length;
+    const byDiff = { Easy: 0, Medium: 0, Hard: 0 };
+    rows.forEach(r => { if (r.solved && byDiff[r.difficulty] != null) byDiff[r.difficulty]++; });
+
+    const act = renderActivity();
+
+    if (rows.length === 0 && subs === 0) {
+      content.innerHTML = `<div class="empty">Nothing here yet.<br>Head back and <a href="./">solve your first problem</a> — your activity, complexity and rank will show up here, privately.</div>`;
+      wireBackup();
+      return;
+    }
+
+    let html = `
+      <div class="cards">
+        <div class="card"><div class="big">${solvedCount.toLocaleString()}</div><div class="lbl">Problems solved</div></div>
+        <div class="card"><div class="big">${subs.toLocaleString()}</div><div class="lbl">Submissions</div></div>
+        <div class="card"><div class="big">${activeDays.toLocaleString()}</div><div class="lbl">Active days</div></div>
+        <div class="card"><div class="big">${savedCount.toLocaleString()}</div><div class="lbl">Saved solutions</div></div>
+      </div>
+      <div class="diffbar">
+        <span class="chip">Easy <b>${byDiff.Easy}</b></span>
+        <span class="chip">Medium <b>${byDiff.Medium}</b></span>
+        <span class="chip">Hard <b>${byDiff.Hard}</b></span>
+      </div>
+
+      <div class="sec-title">Activity</div>
+      <div class="act-wrap"><div class="act-grid">${act.grid}</div></div>
+      <div class="act-summary">${act.summary}</div>
+
+      <div class="sec-title">Your problems</div>
+      <div class="controls">
+        <input id="q" type="text" placeholder="Search by title or number…" autocomplete="off">
+        <select id="diff">
+          <option value="">All difficulties</option>
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+        </select>
+        <select id="only">
+          <option value="">Solved &amp; attempted</option>
+          <option value="solved">Solved only</option>
+        </select>
+      </div>
+      <div id="tbl"></div>`;
+    content.innerHTML = html;
+
+    const q = document.getElementById('q'), diffSel = document.getElementById('diff'), onlySel = document.getElementById('only');
+    function renderTable() {
+      const term = q.value.trim().toLowerCase();
+      const df = diffSel.value, only = onlySel.value;
+      let list = rows.filter(r => {
+        if (df && r.difficulty !== df) return false;
+        if (only === 'solved' && !r.solved) return false;
+        if (term && !(r.title.toLowerCase().includes(term) || String(r.num).includes(term))) return false;
+        return true;
+      }).sort((a, b) => a.num - b.num);
+
+      if (!list.length) { document.getElementById('tbl').innerHTML = `<div class="empty">No problems match.</div>`; return; }
+      let t = `<table><thead><tr>
+        <th>#</th><th>Problem</th><th>Difficulty</th><th></th>
+        <th class="num" title="Best time × / space × vs the reference (lower is faster/leaner)">Best complexity</th>
+        <th class="num" title="Your rank among people who solved this (snapshot from when you solved it)">Your rank</th>
+      </tr></thead><tbody>`;
+      for (const r of list) {
+        const status = r.solved ? '<span class="d-Easy">✓ solved</span>' : '<span class="muted">attempted</span>';
+        const cx = r.perf ? `${ratioTxt(r.perf.tRatio)} time · ${ratioTxt(r.perf.sRatio)} space` : '<span class="muted">—</span>';
+        t += `<tr>
+          <td class="num muted">${r.num}</td>
+          <td>${esc(r.title)}</td>
+          <td><span class="d-${esc(r.difficulty)}">${esc(r.difficulty)}</span></td>
+          <td>${status}</td>
+          <td class="num">${cx}</td>
+          <td class="num">${rankTxt(r.perf)}</td>
+        </tr>`;
+      }
+      t += '</tbody></table>';
+      document.getElementById('tbl').innerHTML = t;
+    }
+    q.addEventListener('input', renderTable);
+    diffSel.addEventListener('change', renderTable);
+    onlySel.addEventListener('change', renderTable);
+    renderTable();
+    wireBackup();
+  });
+
+  // ── Export / Import (same JSON shape as the in-app Export All Data) ──
+  function wireBackup() {
+    const ex = document.getElementById('export-btn'), im = document.getElementById('import-btn'), f = document.getElementById('import-file');
+    if (ex) ex.onclick = () => {
+      const data = { solutions, solved: [...solvedSet], activity, perf };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'freetcode-all-data.json';
+      a.click(); URL.revokeObjectURL(a.href);
+    };
+    if (im) im.onclick = () => f.click();
+    if (f) f.onchange = (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.solutions && typeof data.solutions === 'object') {
+            const s = lsGet('freetcode_user_solutions', {}) || {};
+            Object.assign(s, data.solutions); localStorage.setItem('freetcode_user_solutions', JSON.stringify(s));
+          }
+          if (Array.isArray(data.solved)) {
+            const s = new Set(lsGet('freetcode_solved', [])); data.solved.forEach(n => s.add(n));
+            localStorage.setItem('freetcode_solved', JSON.stringify([...s]));
+          }
+          if (data.activity && typeof data.activity === 'object') {
+            const a = lsGet('freetcode_activity', {}) || {};
+            for (const [k, v] of Object.entries(data.activity)) a[k] = Math.max(a[k] || 0, Number(v) || 0);
+            localStorage.setItem('freetcode_activity', JSON.stringify(a));
+          }
+          if (data.perf && typeof data.perf === 'object') {
+            const pf = lsGet('freetcode_perf', {}) || {};
+            for (const [k, v] of Object.entries(data.perf)) {
+              if (!v || typeof v !== 'object') continue;
+              const prev = pf[k];
+              if (!prev || (Number(v.score) || Infinity) < (Number(prev.score) || Infinity)) pf[k] = v;
+            }
+            localStorage.setItem('freetcode_perf', JSON.stringify(pf));
+          }
+          alert('Imported. Reloading to show your restored progress.');
+          location.reload();
+        } catch (err) { alert('Could not read that file — is it a FreetCode export?'); }
+      };
+      reader.readAsText(file);
+    };
+  }
+})();
+</script>
+</body>
+</html>

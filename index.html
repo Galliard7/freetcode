@@ -52,7 +52,8 @@
       <div class="header-spacer"></div>
       <div class="header-actions">
         <button class="btn btn-ghost" id="theme-cycle" title="Switch theme (click to cycle)"><span class="theme-dot"></span> <span class="btn-text" id="theme-cycle-label">Dark</span></button>
-        <a class="btn btn-ghost" href="dashboard.html" title="Community stats" target="_blank" rel="noopener" style="text-decoration:none">📊 <span class="btn-text">Stats</span></a>
+        <a class="btn btn-ghost" href="me.html" title="Your private stats (stored on this device)" target="_blank" rel="noopener" style="text-decoration:none">📈 <span class="btn-text">My Stats</span></a>
+        <a class="btn btn-ghost" href="dashboard.html" title="Community stats" target="_blank" rel="noopener" style="text-decoration:none">📊 <span class="btn-text">Community</span></a>
         <button class="btn btn-ghost" id="settings-btn" title="Settings">⚙</button>
       </div>
     </header>
@@ -1055,6 +1056,28 @@ function renderActivity() {
     : `No activity yet — solve a problem and it'll fill in here.`;
 }
 
+// ─── Per-problem performance snapshot (private, on-device) ───
+// freetcode_perf: { <num>: { score, tRatio, sRatio, rank, total, pct, ts } }.
+// Written on each accepted solve; read by the My Stats page (me.html) so it can
+// show complexity + crowd rank without any per-problem network call.
+function getPerf() { try { return JSON.parse(localStorage.getItem('freetcode_perf') || '{}'); } catch { return {}; } }
+function recordPerf(num, score, tRatio, sRatio, stat) {
+  if (!(num > 0) || score == null) return;
+  const perf = getPerf();
+  const prev = perf[num];
+  const better = !prev || score < prev.score;   // lower composite = faster/leaner
+  perf[num] = {
+    score:  better ? score : prev.score,
+    tRatio: better ? (tRatio ?? null) : prev.tRatio,
+    sRatio: better ? (sRatio ?? null) : prev.sRatio,
+    rank:  (stat && stat.rank != null)  ? stat.rank       : (prev && prev.rank  != null ? prev.rank  : null),
+    total: (stat && stat.total != null) ? stat.total      : (prev && prev.total != null ? prev.total : null),
+    pct:   (stat && stat.percentile != null) ? stat.percentile : (prev && prev.pct != null ? prev.pct : null),
+    ts: Date.now(),
+  };
+  try { localStorage.setItem('freetcode_perf', JSON.stringify(perf)); } catch (_) {}
+}
+
 // ─── Settings Modal (Data Management) ───
 document.getElementById('settings-btn').addEventListener('click', () => {
   const statsEl = document.getElementById('settings-stats');
@@ -1138,7 +1161,7 @@ document.getElementById('export-solutions').addEventListener('click', () => {
   downloadJSON({ solutions: savedSolutions }, 'freetcode-solutions.json');
 });
 document.getElementById('export-progress').addEventListener('click', () => {
-  downloadJSON({ solutions: savedSolutions, solved: [...solvedSet], activity: getActivity() }, 'freetcode-all-data.json');
+  downloadJSON({ solutions: savedSolutions, solved: [...solvedSet], activity: getActivity(), perf: getPerf() }, 'freetcode-all-data.json');
 });
 document.getElementById('import-solutions').addEventListener('click', () => {
   document.getElementById('import-file-input').click();
@@ -1162,6 +1185,16 @@ document.getElementById('import-file-input').addEventListener('change', (e) => {
         const act = getActivity();
         for (const [k, v] of Object.entries(data.activity)) act[k] = Math.max(act[k] || 0, Number(v) || 0);
         localStorage.setItem('freetcode_activity', JSON.stringify(act));
+      }
+      if (data.perf && typeof data.perf === 'object') {
+        const perf = getPerf();
+        for (const [k, v] of Object.entries(data.perf)) {
+          if (!v || typeof v !== 'object') continue;
+          const prev = perf[k];
+          // keep the better (lower) composite score per problem
+          if (!prev || (Number(v.score) || Infinity) < (Number(prev.score) || Infinity)) perf[k] = v;
+        }
+        localStorage.setItem('freetcode_perf', JSON.stringify(perf));
       }
       renderProblemList(document.getElementById('problem-search').value);
       if (currentProblem) selectProblem(currentProblem);
@@ -1518,12 +1551,19 @@ async function submitCode() {
     }
 
     // 3) Record anonymous stat → rank + unlock + arcade board (score = composite)
+    let stat = null;
     if (recordStats) {
-      const stat = await Stats.postEvent({ problem: currentProblem.num, verdict, ratio: finalScore });
+      stat = await Stats.postEvent({ problem: currentProblem.num, verdict, ratio: finalScore });
       if (stat && verdict === 'accepted' && finalScore != null) {
         outputEl.innerHTML += Judge.formatRank(stat, finalScore);
         await maybeArcade(currentProblem.num, finalScore, tRatio, sRatio);
       }
+    }
+    // Snapshot this solve's complexity + crowd rank into localStorage for My Stats.
+    // Keeps the personal page 0-DB — it reads this snapshot instead of re-querying
+    // /stats per solved problem on load.
+    if (verdict === 'accepted' && finalScore != null) {
+      recordPerf(currentProblem.num, finalScore, tRatio, sRatio, stat);
     }
     if (corr.correct) appendShareButton(currentProblem);
     window.__ocLastVerdict = { problem: currentProblem.num, verdict, score: finalScore, tRatio, sRatio };
