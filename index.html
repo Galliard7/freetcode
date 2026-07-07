@@ -214,10 +214,8 @@
         <button class="theme-swatch" data-theme="glassy"><span class="sw sw-glass"></span><span>Glassy</span></button>
         <button class="theme-swatch" data-theme="warm"><span class="sw sw-warm"></span><span>Warm Paper</span></button>
       </div>
-      <h3>Your Activity</h3>
-      <div class="activity-summary" id="activity-summary"></div>
-      <div class="activity-grid-wrap"><div class="activity-grid" id="activity-grid"></div></div>
-      <p class="activity-note">This activity log lives only in this browser — clearing your browser data erases it. Use <strong>Export All Data</strong> below to back it up.</p>
+      <h3>Your Stats</h3>
+      <p>Your activity heatmap, solved problems, complexity and rank live on your private <a href="me.html" target="_blank" rel="noopener" style="color:var(--accent)">My Stats</a> page — stored only on this device.</p>
 
       <h3>Data Management</h3>
       <p>Your solutions and progress are saved in this browser's local storage.</p>
@@ -1034,27 +1032,8 @@ function recordActivity() {
   act[key] = (act[key] || 0) + 1;
   localStorage.setItem('freetcode_activity', JSON.stringify(act));
 }
-function activityLevel(n) { return !n ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4; }
-function renderActivity() {
-  const act = getActivity(), WEEKS = 26;
-  const end = new Date(localDay() + 'T00:00:00');
-  const start = new Date(end.getTime() - (WEEKS * 7 - 1) * 86400000);
-  start.setDate(start.getDate() - start.getDay());            // back to Sunday
-  const loopEnd = new Date(end); loopEnd.setDate(loopEnd.getDate() + (6 - loopEnd.getDay()));
-  let grid = '', col = '', i = 0, activeDays = 0, subs = 0;
-  for (let cur = new Date(start); cur <= loopEnd; cur = new Date(cur.getTime() + 86400000)) {
-    const key = localDay(cur), n = act[key] || 0, future = cur > end;
-    if (n) { activeDays++; subs += n; }
-    const title = future ? '' : `${n} submission${n !== 1 ? 's' : ''} · ${key}`;
-    col += `<div class="act-cell act-l${future ? '-x' : activityLevel(n)}" title="${title}"></div>`;
-    if (++i % 7 === 0) { grid += `<div class="act-col">${col}</div>`; col = ''; }
-  }
-  document.getElementById('activity-grid').innerHTML = grid;
-  const sum = document.getElementById('activity-summary');
-  if (sum) sum.innerHTML = activeDays
-    ? `<strong>${activeDays}</strong> active day${activeDays !== 1 ? 's' : ''} · <strong>${subs}</strong> submission${subs !== 1 ? 's' : ''} in the last ${WEEKS} weeks`
-    : `No activity yet — solve a problem and it'll fill in here.`;
-}
+// The activity heatmap now renders on the private My Stats page (me.html), not
+// in Settings — recordActivity() below still logs each submit to localStorage.
 
 // ─── Per-problem performance snapshot (private, on-device) ───
 // freetcode_perf: { <num>: { score, tRatio, sRatio, rank, total, pct, ts } }.
@@ -1084,7 +1063,6 @@ document.getElementById('settings-btn').addEventListener('click', () => {
   const solCount = Object.keys(savedSolutions).length;
   const solvedCount = solvedSet.size;
   statsEl.innerHTML = `<div style="font-size:12px;color:var(--fg-secondary);margin-bottom:12px">${solCount} saved solution${solCount !== 1 ? 's' : ''} · ${solvedCount} problem${solvedCount !== 1 ? 's' : ''} marked solved</div>`;
-  renderActivity();
   document.getElementById('settings-modal').classList.add('show');
 });
 document.getElementById('settings-close').addEventListener('click', () => {
