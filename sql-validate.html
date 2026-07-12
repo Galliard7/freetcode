@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!-- FreetCode — SQL content validation harness. Standalone; not linked from the app.
+     Runs every oracle through the REAL PGlite engine + SqlJudge and reports failures.
+     Read #report (JSON) via Playwright. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FreetCode — SQL validation</title>
+<style>
+  body { font: 13px ui-monospace, Menlo, monospace; background:#0e1116; color:#e6edf3; padding:20px; }
+  #summary { font-size:16px; margin-bottom:12px; }
+  .ok { color:#7ee787; } .bad { color:#ff7b72; }
+  pre { white-space:pre-wrap; }
+</style>
+</head>
+<body>
+  <div id="summary">Validating…</div>
+  <pre id="report"></pre>
+  <script src="sqljudge.js"></script>
+  <script src="sqlengine.js"></script>
+  <script>
+    (async function () {
+      const summaryEl = document.getElementById('summary');
+      const reportEl = document.getElementById('report');
+      const report = { total: 0, passed: 0, failed: 0, problems: [] };
+
+      function fail(rec, msg) { rec.ok = false; rec.errors.push(msg); }
+
+      try {
+        const data = await (await fetch('problems-sql.json')).json();
+        const engine = new SqlEngine();
+        engine.onInitError = (m) => { summaryEl.textContent = 'ENGINE INIT ERROR: ' + m; summaryEl.className = 'bad'; };
+        await engine.whenReady();
+
+        for (const p of data.problems) {
+          const rec = { id: p.id, num: p.num, title: p.title, ok: true, errors: [], rows: null };
+          report.total++;
+
+          const ds = data.datasets[p.dataset];
+          if (!ds && !p.inlineSetup) { fail(rec, 'no dataset/inlineSetup'); report.problems.push(rec); continue; }
+          const setup = p.inlineSetup ? [].concat(p.inlineSetup).join('\n') : ds.setup.join('\n');
+
+          const prep = await engine.prepare(setup);
+          if (!prep.ok) { fail(rec, 'prepare failed: ' + prep.error); report.problems.push(rec); continue; }
+
+          const oracle = await engine.run(p.oracle);
+          if (oracle.error) { fail(rec, 'ORACLE errored: ' + oracle.error); report.problems.push(rec); continue; }
+          rec.rows = oracle.rowCount;
+          rec.columns = oracle.columns;
+          if (oracle.rowCount < 1 && !p.allowEmpty) fail(rec, 'oracle returned 0 rows (set allowEmpty if intended)');
+
+          const ordered = (p.ordered !== undefined) ? p.ordered : SqlJudge.inferOrdered(p.oracle);
+          rec.ordered = ordered;
+
+          // Sanity: the oracle must grade itself as correct.
+          const self = SqlJudge.compareResultSets(oracle, oracle, { ordered, strictColumns: p.strictColumns });
+          if (!self.pass) fail(rec, 'self-compare failed: ' + self.reason);
+
+          // If a wrongExample is given, it MUST be rejected.
+          if (p.wrongExample) {
+            const wrong = await engine.run(p.wrongExample);
+            const verdict = SqlJudge.compareResultSets(wrong, oracle, { ordered, strictColumns: p.strictColumns });
+            if (verdict.pass) fail(rec, 'wrongExample was NOT rejected (grading too loose)');
+            else rec.wrongRejectedBecause = verdict.reason;
+          }
+
+          if (rec.ok) report.passed++; else report.failed++;
+          report.problems.push(rec);
+        }
+      } catch (e) {
+        report.fatal = String(e && e.stack || e);
+      }
+
+      reportEl.textContent = JSON.stringify(report, null, 2);
+      const bad = report.failed > 0 || report.fatal;
+      summaryEl.textContent = report.fatal ? ('FATAL: ' + report.fatal)
+        : `${report.passed}/${report.total} passed · ${report.failed} failed`;
+      summaryEl.className = bad ? 'bad' : 'ok';
+      window.__DONE__ = true;
+    })();
+  </script>
+</body>
+</html>

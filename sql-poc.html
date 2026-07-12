@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<!-- FreetCode — SQL engine spike (Checkpoint 1). Standalone; not linked from the app.
+     Proves PGlite (real Postgres) runs in-browser and renders a result grid. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreetCode — SQL engine spike</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+         background: #0e1116; color: #e6edf3; padding: 24px; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .sub { color: #8b949e; margin: 0 0 16px; }
+  #status { padding: 6px 10px; border-radius: 6px; display: inline-block; margin-bottom: 12px;
+            background: #21262d; }
+  #status.ready { background: #133a1e; color: #7ee787; }
+  #status.err   { background: #3a1313; color: #ff7b72; }
+  textarea { width: 100%; height: 150px; box-sizing: border-box; background: #161b22;
+             color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 12px;
+             font: inherit; resize: vertical; }
+  button { margin: 10px 0; background: #238636; color: #fff; border: 0; padding: 8px 18px;
+           border-radius: 6px; font: inherit; cursor: pointer; }
+  button:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+  .meta { color: #8b949e; margin: 8px 0; }
+  table { border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  th, td { border: 1px solid #30363d; padding: 5px 12px; text-align: left; }
+  th { background: #161b22; color: #58a6ff; }
+  .out-err { color: #ff7b72; white-space: pre-wrap; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <h1>FreetCode — SQL engine spike</h1>
+  <p class="sub">PGlite (real Postgres 15, WASM) in a module Web Worker. Demo table: <code>transactions</code>.</p>
+  <div id="status">Booting Postgres…</div>
+
+  <textarea id="sql">SELECT user_id, created_at, amount,
+       SUM(amount) OVER (PARTITION BY user_id ORDER BY created_at) AS running_total,
+       ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at) AS txn_seq
+FROM transactions
+WHERE status = 'approved'
+ORDER BY user_id, created_at;</textarea>
+  <br>
+  <button id="run" disabled>Run</button>
+  <div id="meta" class="meta"></div>
+  <div id="grid"></div>
+
+  <script src="sqlengine.js"></script>
+  <script>
+    const statusEl = document.getElementById('status');
+    const runBtn   = document.getElementById('run');
+    const metaEl   = document.getElementById('meta');
+    const gridEl   = document.getElementById('grid');
+    const sqlEl    = document.getElementById('sql');
+
+    const engine = new SqlEngine();
+    engine.onReady = () => {
+      statusEl.textContent = 'Postgres ready ✓';
+      statusEl.className = 'ready';
+      runBtn.disabled = false;
+    };
+    engine.onInitError = (msg) => {
+      statusEl.textContent = 'Init error: ' + msg;
+      statusEl.className = 'err';
+    };
+
+    function renderGrid(res) {
+      gridEl.innerHTML = '';
+      metaEl.textContent = '';
+      if (res.error) {
+        const d = document.createElement('div');
+        d.className = 'out-err';
+        d.textContent = 'SQL error: ' + res.error;
+        gridEl.appendChild(d);
+        return;
+      }
+      metaEl.textContent = `${res.rowCount} row(s) · ${res.ms.toFixed(1)} ms`;
+      const table = document.createElement('table');
+      const thead = document.createElement('tr');
+      res.columns.forEach((c) => {
+        const th = document.createElement('th'); th.textContent = c; thead.appendChild(th);
+      });
+      table.appendChild(thead);
+      res.rows.forEach((row) => {
+        const tr = document.createElement('tr');
+        res.columns.forEach((c) => {
+          const td = document.createElement('td');
+          td.textContent = row[c] === null ? 'NULL' : String(row[c]);
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+      gridEl.appendChild(table);
+    }
+
+    runBtn.addEventListener('click', async () => {
+      runBtn.disabled = true;
+      metaEl.textContent = 'Running…';
+      try {
+        const res = await engine.run(sqlEl.value);
+        renderGrid(res);
+      } catch (e) {
+        renderGrid({ error: e.timeout ? 'timeout (worker terminated)' : String(e.message || e) });
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -49,6 +49,20 @@
         <div class="logo-mark">&lt;/&gt;</div>
         <span>FreetCode</span>
       </a>
+      <div class="mode-switch" id="mode-switch" title="Switch between Algo and SQL practice">
+        <button class="mode-btn active" data-mode="algo">Algo</button>
+        <button class="mode-btn" data-mode="sql">SQL</button>
+      </div>
+      <style>
+        .mode-switch{display:inline-flex;gap:2px;background:var(--bg-elev,#161b22);border:1px solid var(--border,#30363d);border-radius:8px;padding:2px;margin-left:10px}
+        .mode-btn{background:transparent;border:0;color:var(--fg-muted,#8b949e);padding:4px 14px;border-radius:6px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
+        .mode-btn.active{background:var(--accent,#238636);color:#fff}
+        .sql-schema{margin:0 0 12px;padding:10px 12px;background:var(--bg-elev,#161b22);border:1px solid var(--border,#30363d);border-radius:8px;font-size:12px;line-height:1.6}
+        .sql-grid{border-collapse:collapse;margin-top:8px;font-size:13px}
+        .sql-grid th,.sql-grid td{border:1px solid var(--border,#30363d);padding:4px 10px;text-align:left}
+        .sql-grid th{color:var(--accent2,#58a6ff)}
+        .sql-ref summary{cursor:pointer;color:var(--fg-muted,#8b949e)}
+      </style>
       <div class="header-spacer"></div>
       <div class="header-actions">
         <button class="btn btn-ghost" id="theme-cycle" title="Switch theme (click to cycle)"><span class="theme-dot"></span> <span class="btn-text" id="theme-cycle-label">Dark</span></button>
@@ -196,6 +210,10 @@
   <script src="judge.js?v=2"></script>
   <script src="stats.js?v=6"></script>
 
+  <!-- SQL mode: PGlite (Postgres/WASM) engine + result-set judge -->
+  <script src="sqljudge.js?v=1"></script>
+  <script src="sqlengine.js?v=2"></script>
+
   <!-- Visualizer Scripts -->
   <script src="visualizers/dfs.js"></script>
   <script src="visualizers/bfs.js"></script>
@@ -325,6 +343,31 @@ let pyReady = false;
 let isRunning = false;
 let solvedSet = new Set(JSON.parse(localStorage.getItem('freetcode_solved') || '[]'));
 let savedSolutions = JSON.parse(localStorage.getItem('freetcode_user_solutions') || '{}');
+
+// ─── SQL mode state (Algo | SQL). SQL problems are served as a static file
+//     (problems-sql.json) and run in PGlite/Postgres; see docs/sql-practice-spec.md ───
+let currentMode = 'algo';        // 'algo' | 'sql'
+let sqlProblems = [];
+let sqlDatasets = {};
+let sqlEngine = null;
+let sqlReady = false;
+let sqlPrepared = null;          // problem id whose dataset is currently seeded
+let sqlSolvedSet = new Set(JSON.parse(localStorage.getItem('freetcode_sql_solved') || '[]'));
+const SQL_COLLECTIONS = [
+  { id: 'all', label: 'Freet SQL' },   // the dedup superset (Freet SQL)
+  { id: 'signal', label: 'Signal' },
+  { id: 'foundations', label: 'SQL Foundations' },
+];
+const SQL_CATEGORY_ORDER = [
+  'Filtering & Sorting', 'Joins', 'Aggregation', 'Conditional Logic',
+  'Subqueries & CTEs', 'Set Ops', 'Window Functions', 'Date/Time',
+  'Cohort & Funnel', 'Metric Debugging',
+];
+// Mode-aware selectors so the existing render functions serve either mode.
+function activeProblems()     { return currentMode === 'sql' ? sqlProblems : problems; }
+function activeCollections()  { return currentMode === 'sql' ? SQL_COLLECTIONS : COLLECTIONS; }
+function activeCategoryOrder(){ return currentMode === 'sql' ? SQL_CATEGORY_ORDER : CATEGORY_ORDER; }
+function activeSolved()       { return currentMode === 'sql' ? sqlSolvedSet : solvedSet; }
 
 // ─── DOM refs ───
 const app = document.getElementById('app');
@@ -512,12 +555,12 @@ function renderCollectionPills() {
   const el = document.getElementById('collection-filter');
   if (!el) return;
   const counts = {};
-  for (const c of COLLECTIONS) {
+  for (const c of activeCollections()) {
     counts[c.id] = c.id === 'all'
-      ? problems.filter(p => p.num > 0).length
-      : problems.filter(p => (p.lists || []).includes(c.id)).length;
+      ? activeProblems().filter(p => p.num > 0).length
+      : activeProblems().filter(p => (p.lists || []).includes(c.id)).length;
   }
-  el.innerHTML = COLLECTIONS.map(c =>
+  el.innerHTML = activeCollections().map(c =>
     `<button class="collection-pill${c.id === currentCollection ? ' active' : ''}" data-coll="${c.id}" title="${c.label}">
       ${c.label}<span class="collection-pill-count">${counts[c.id]}</span>
     </button>`
@@ -535,7 +578,7 @@ function renderCollectionPills() {
 function renderProblemList(filter = '') {
   const grouped = {};
   const lowerFilter = filter.toLowerCase();
-  for (const p of problems) {
+  for (const p of activeProblems()) {
     if (currentCollection !== 'all' && !(p.lists || []).includes(currentCollection)) continue;
     if (filter && !p.title.toLowerCase().includes(lowerFilter) &&
         !String(p.num).includes(filter) &&
@@ -546,9 +589,10 @@ function renderProblemList(filter = '') {
   }
 
   // Sort categories by roadmap order
+  const catOrder = activeCategoryOrder();
   const sortedCats = Object.keys(grouped).sort((a, b) => {
-    const ia = CATEGORY_ORDER.indexOf(a);
-    const ib = CATEGORY_ORDER.indexOf(b);
+    const ia = catOrder.indexOf(a);
+    const ib = catOrder.indexOf(b);
     return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
   });
 
@@ -563,8 +607,8 @@ function renderProblemList(filter = '') {
       </div>`;
     for (const p of items) {
       const active = currentProblem && currentProblem.num === p.num ? ' active' : '';
-      const solved = solvedSet.has(p.num) ? ' solved' : '';
-      const hasSaved = savedSolutions[p.num] ? ' has-saved' : '';
+      const solved = activeSolved().has(p.num) ? ' solved' : '';
+      const hasSaved = (currentMode === 'algo' && savedSolutions[p.num]) ? ' has-saved' : '';
       const diff = (p.difficulty || 'Easy').toLowerCase();
       const numLabel = p.num > 0 ? p.num : '📘';
       html += `<div class="problem-item${active}${solved}${hasSaved}" data-num="${p.num}">
@@ -591,7 +635,7 @@ function renderProblemList(filter = '') {
   });
   problemListEl.querySelectorAll('.problem-item').forEach(el => {
     el.addEventListener('click', () => {
-      const p = problems.find(x => x.num == el.dataset.num);
+      const p = activeProblems().find(x => x.num == el.dataset.num);
       if (p) {
         selectProblem(p);
         // Auto-close sidebar on mobile
@@ -608,6 +652,7 @@ function renderProblemList(filter = '') {
 
 // ─── Select Problem ───
 async function selectProblem(p) {
+  if (currentMode === 'sql') { await selectSqlProblem(p); return; }
   // Index items are lightweight (no body). Fetch the full problem on demand,
   // merging the body over the list metadata. Already-full objects pass through.
   if (p && p.solution === undefined && p.template === undefined && p.description === undefined) {
@@ -902,40 +947,36 @@ document.getElementById('hints-toggle').addEventListener('click', () => {
 
 // ─── Progress ───
 function updateProgress() {
-  const total = problems.length;
-  const done = solvedSet.size;
+  const total = activeProblems().length;
+  const done = activeSolved().size;
   document.getElementById('progress-count').textContent = `${done} / ${total}`;
   document.getElementById('progress-fill').style.width = total ? `${(done/total)*100}%` : '0%';
 }
+function setMarkSolvedBtn(solved) {
+  const btn = document.getElementById('mark-solved');
+  if (solved) { btn.textContent = '✓ Solved'; btn.style.color = 'var(--easy)'; btn.style.borderColor = 'var(--easy)'; }
+  else { btn.textContent = '☐ Mark Solved'; btn.style.color = ''; btn.style.borderColor = ''; }
+}
+function solvedStorageKey() { return currentMode === 'sql' ? 'freetcode_sql_solved' : 'freetcode_solved'; }
 function markSolved(num) {
-  solvedSet.add(num);
-  localStorage.setItem('freetcode_solved', JSON.stringify([...solvedSet]));
+  activeSolved().add(num);
+  localStorage.setItem(solvedStorageKey(), JSON.stringify([...activeSolved()]));
   updateProgress();
   renderProblemList(document.getElementById('problem-search').value);
-  if (currentProblem && currentProblem.num === num) {
-    const btn = document.getElementById('mark-solved');
-    btn.textContent = '✓ Solved';
-    btn.style.color = 'var(--easy)';
-    btn.style.borderColor = 'var(--easy)';
-  }
+  if (currentProblem && currentProblem.num === num) setMarkSolvedBtn(true);
 }
 function unmarkSolved(num) {
-  solvedSet.delete(num);
-  localStorage.setItem('freetcode_solved', JSON.stringify([...solvedSet]));
+  activeSolved().delete(num);
+  localStorage.setItem(solvedStorageKey(), JSON.stringify([...activeSolved()]));
   updateProgress();
   renderProblemList(document.getElementById('problem-search').value);
-  if (currentProblem && currentProblem.num === num) {
-    const btn = document.getElementById('mark-solved');
-    btn.textContent = '☐ Mark Solved';
-    btn.style.color = '';
-    btn.style.borderColor = '';
-  }
+  if (currentProblem && currentProblem.num === num) setMarkSolvedBtn(false);
 }
 
 // ─── Mark Solved Button ───
 document.getElementById('mark-solved').addEventListener('click', () => {
   if (!currentProblem) return;
-  if (solvedSet.has(currentProblem.num)) {
+  if (activeSolved().has(currentProblem.num)) {
     unmarkSolved(currentProblem.num);
   } else {
     markSolved(currentProblem.num);
@@ -1350,6 +1391,7 @@ function awaitRestart(activeBtn) {
 
 // ─── Run (unjudged scratchpad) ───
 async function runCode() {
+  if (currentMode === 'sql') return runSql();
   if (!pyReady || !editor || isRunning) return;
   isRunning = true;
   setBusy(runBtn, '⏳ Running...');
@@ -1450,6 +1492,7 @@ runBtn.addEventListener('click', runCode);
 const SCALED_N = 200000; // default stress size when a problem has no spec.n
 
 async function submitCode() {
+  if (currentMode === 'sql') return submitSql();
   if (!pyReady || !editor || !currentProblem || isRunning) return;
   // Submit is locked while the reference solution is shown (the button is
   // disabled; this guard also covers the ⌘⇧↵ shortcut). Hide it to submit.
@@ -1630,11 +1673,207 @@ function showArcadeEntry(problem, score, tRatio, sRatio) {
   outputEl.scrollTop = outputEl.scrollHeight;
 }
 
+// ══════════════════════════════════════════════════════════════════
+//  SQL MODE  (PGlite/Postgres in a worker; grading via SqlJudge)
+//  Additive: when currentMode === 'algo' nothing below runs.
+// ══════════════════════════════════════════════════════════════════
+function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function fmtCell(v) {
+  if (v === null || v === undefined) return 'NULL';
+  if (v instanceof Date) { const iso = v.toISOString(); return iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 19).replace('T', ' '); }
+  return String(v);
+}
+function renderGrid(res) {
+  if (res.error) return `<div class="verdict-card" style="border-left:3px solid var(--hard,#f85149)"><pre style="white-space:pre-wrap;margin:0">${escHtml(res.error)}</pre></div>`;
+  if (!res.columns || !res.columns.length) return '<div class="out-meta">(query returned no columns)</div>';
+  const head = res.columns.map(c => `<th>${escHtml(c)}</th>`).join('');
+  const rows = (res.rows || []).slice(0, 100).map(r =>
+    `<tr>${res.columns.map(c => `<td>${escHtml(fmtCell(r[c]))}</td>`).join('')}</tr>`).join('');
+  const more = (res.rows || []).length > 100 ? `<div class="out-meta">… ${res.rows.length - 100} more rows</div>` : '';
+  return `<table class="sql-grid"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>${more}`;
+}
+function renderSqlSchema(p) {
+  const ds = sqlDatasets[p.dataset];
+  if (!ds) return '';
+  const tables = (ds.tables || []).map(t =>
+    `<div style="margin-top:4px"><strong>${escHtml(t.name)}</strong>(${(t.columns || []).map(escHtml).join(', ')})</div>`).join('');
+  return `<div class="sql-schema"><div style="color:var(--fg-muted)">SCHEMA — ${escHtml(ds.label || p.dataset)}</div>${tables}</div>`;
+}
+function currentSetup() {
+  const p = currentProblem; if (!p) return '';
+  const ds = sqlDatasets[p.dataset];
+  return p.inlineSetup ? [].concat(p.inlineSetup).join('\n') : (ds ? ds.setup.join('\n') : '');
+}
+
+let sqlLoadPromise = null;
+function loadSqlProblems() {   // memoized: safe to call from boot and from setMode
+  if (sqlLoadPromise) return sqlLoadPromise;
+  sqlLoadPromise = (async () => {
+    try {
+      const data = await (await fetch('problems-sql.json')).json();
+      sqlDatasets = data.datasets || {};
+      sqlProblems = (data.problems || []).map(p => ({ ...p, difficulty: p.difficulty || 'Easy', tags: [] }));
+    } catch (e) { sqlProblems = []; console.warn('SQL curriculum failed to load', e); }
+  })();
+  return sqlLoadPromise;
+}
+
+function ensureSqlEngine() {
+  if (sqlEngine) return sqlEngine;
+  sqlEngine = new SqlEngine();
+  sqlEngine.onReady = () => {
+    sqlReady = true;
+    if (currentMode === 'sql') {
+      hidePyBanner();
+      runBtn.disabled = false; runBtn.innerHTML = '▶ Run <kbd>⌘↵</kbd>';
+      if (currentProblem) {
+        submitBtn.disabled = false;
+        // (re)seed the current problem's dataset after boot or a reset
+        sqlEngine.prepare(currentSetup()).then(r => { sqlPrepared = r.ok ? currentProblem.id : null; });
+      }
+    }
+  };
+  sqlEngine.onInitError = (m) => { if (currentMode === 'sql') showPyBanner('SQL engine failed to load: ' + m, false); };
+  return sqlEngine;
+}
+
+async function setMode(mode) {
+  if (mode === currentMode) return;
+  currentMode = mode;
+  document.querySelectorAll('#mode-switch .mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  currentCollection = 'all';
+  currentProblem = null;
+  showingSolution = false;
+  document.getElementById('solution-picker').style.display = 'none';
+  submitBtn.style.display = 'none';
+  document.getElementById('mark-solved').style.display = 'none';
+  document.getElementById('reset-code').style.display = 'none';
+  document.getElementById('current-problem-title').textContent = 'Select a problem';
+  document.getElementById('current-difficulty').style.display = 'none';
+  document.getElementById('current-tags').innerHTML = '';
+  if (editor) { editor.setValue(''); }
+  clearOutput();
+
+  if (mode === 'sql') {
+    await loadSqlProblems();   // ensure the curriculum is present before we render the list
+    if (editor && window.monaco) monaco.editor.setModelLanguage(editor.getModel(), 'sql');
+    ensureSqlEngine();
+    if (!sqlReady) { runBtn.disabled = true; runBtn.innerHTML = '⏳ Loading…'; showPyBanner('Starting Postgres (SQL engine)…', false); }
+    else { runBtn.disabled = false; runBtn.innerHTML = '▶ Run <kbd>⌘↵</kbd>'; hidePyBanner(); }
+  } else {
+    if (editor && window.monaco) monaco.editor.setModelLanguage(editor.getModel(), 'python');
+    if (pyReady) { runBtn.disabled = false; runBtn.innerHTML = '▶ Run <kbd>⌘↵</kbd>'; hidePyBanner(); }
+  }
+  renderCollectionPills();
+  renderProblemList('');
+  updateProgress();
+}
+
+async function selectSqlProblem(p) {
+  currentProblem = p;
+  showingSolution = false;
+  document.getElementById('current-problem-title').textContent = `${p.num}. ${p.title}`;
+  const diffEl = document.getElementById('current-difficulty');
+  diffEl.style.display = ''; diffEl.className = `pill ${(p.difficulty || 'Easy').toLowerCase()}`; diffEl.textContent = p.difficulty || 'Easy';
+  document.getElementById('current-tags').innerHTML = `<span class="tag">${escHtml(p.category)}</span>`;
+  document.getElementById('solution-picker').style.display = 'none';  // SQL uses an inline reference disclosure after Submit
+  document.getElementById('reset-code').style.display = 'none';
+  const markSolvedBtn = document.getElementById('mark-solved');
+  markSolvedBtn.style.display = ''; setMarkSolvedBtn(sqlSolvedSet.has(p.num));
+  if (editor) {
+    if (window.monaco) monaco.editor.setModelLanguage(editor.getModel(), 'sql');
+    editor.setValue(p.starter || '-- Write your query here\n');
+    editor.setScrollPosition({ scrollTop: 0 });
+  }
+  descContent.innerHTML = renderSqlSchema(p) + renderDescription(p.prompt || '');
+  toggleDescription(true);
+  const vizBtn = document.getElementById('viz-btn'); if (vizBtn) vizBtn.style.display = 'none';
+  problemListEl.querySelectorAll('.problem-item').forEach(el => el.classList.toggle('active', el.dataset.num == p.num));
+  clearOutput();
+  submitBtn.style.display = ''; submitBtn.disabled = !sqlReady;
+  if (sqlReady) { const r = await sqlEngine.prepare(currentSetup()); sqlPrepared = r.ok ? p.id : null; if (!r.ok) appendOutput('Schema load error: ' + r.error, 'out-err'); }
+  else { sqlPrepared = null; }
+  window.dispatchEvent(new CustomEvent('oc:problemchange', { detail: p.num }));
+}
+
+async function ensurePrepared(p) {
+  if (sqlPrepared === p.id) return true;
+  const r = await sqlEngine.prepare(currentSetup());
+  sqlPrepared = r.ok ? p.id : null;
+  if (!r.ok) appendOutput('Schema error: ' + r.error, 'out-err');
+  return r.ok;
+}
+
+async function runSql() {
+  if (!sqlReady || !editor || isRunning || !currentProblem) return;
+  isRunning = true; setBusy(runBtn, '⏳ Running…'); submitBtn.disabled = true;
+  if (outputEl.querySelector('.output-placeholder')) outputEl.innerHTML = '';
+  try {
+    if (!(await ensurePrepared(currentProblem))) return;
+    const res = await sqlEngine.run(editor.getValue());
+    outputEl.innerHTML = res.error ? renderGrid(res)
+      : `<div class="out-meta">${res.rowCount} row(s) · ${res.ms.toFixed(1)} ms</div>` + renderGrid(res);
+  } catch (e) {
+    if (e.timeout) { appendOutput('✗ Query stopped after 10s — the SQL engine was reset.', 'out-err'); sqlReady = false; sqlPrepared = null; }
+    else appendOutput('✗ ' + (e.message || e), 'out-err');
+  } finally {
+    isRunning = false;
+    if (sqlEngine && sqlEngine.ready) { runBtn.disabled = false; runBtn.innerHTML = '▶ Run <kbd>⌘↵</kbd>'; submitBtn.disabled = false; }
+  }
+}
+
+async function submitSql() {
+  if (!sqlReady || !editor || !currentProblem || isRunning) return;
+  isRunning = true; setBusy(submitBtn, '⏳ Judging…'); runBtn.disabled = true; outputEl.innerHTML = '';
+  const p = currentProblem, userSql = editor.getValue();
+  const ordered = (p.ordered !== undefined) ? p.ordered : SqlJudge.inferOrdered(p.oracle);
+  const opts = { ordered, strictColumns: p.strictColumns };
+  const refBlock = `<details class="sql-ref" style="margin-top:10px"><summary>Reference query &amp; explanation</summary><pre style="white-space:pre-wrap;padding:8px 0">${escHtml(p.oracle)}</pre><div>${escHtml(p.explanation || '')}</div></details>`;
+  try {
+    if (!(await ensurePrepared(p))) return;
+    const oracle = await sqlEngine.run(p.oracle);
+    const user = await sqlEngine.run(userSql);
+    const verdict = SqlJudge.compareResultSets(user, oracle, opts);
+    if (!verdict.pass) {
+      outputEl.innerHTML = `<div class="verdict-card" style="border-left:3px solid var(--hard,#f85149)"><div class="verdict-head">✗ Not quite</div><div>${escHtml(verdict.reason || '')}</div></div>`
+        + (user.error ? '' : `<div class="out-meta">Your result:</div>` + renderGrid(user)) + refBlock;
+      return;
+    }
+    // Scaled correctness tier (ADR 0007): re-run on a larger dataset if provided.
+    let scaledNote = '';
+    if (p.scaledSetup) {
+      const sr = await sqlEngine.prepare([].concat(p.scaledSetup).join('\n'));
+      if (sr.ok) {
+        const o2 = await sqlEngine.run(p.oracle), u2 = await sqlEngine.run(userSql);
+        const v2 = SqlJudge.compareResultSets(u2, o2, opts);
+        await sqlEngine.prepare(currentSetup()); sqlPrepared = p.id;
+        if (!v2.pass) {
+          outputEl.innerHTML = `<div class="verdict-card" style="border-left:3px solid var(--hard,#f85149)"><div class="verdict-head">✗ Correct on the sample, wrong at scale</div><div>Your query matches on the small dataset but diverges on a larger one — a classic join fan-out or missing de-duplication. ${escHtml(v2.reason || '')}</div></div>` + refBlock;
+          return;
+        }
+        scaledNote = '<div class="out-meta">✓ Also correct on a larger dataset.</div>';
+      }
+    }
+    outputEl.innerHTML = `<div class="verdict-card" style="border-left:3px solid var(--easy,#3fb950)"><div class="verdict-head">✓ Correct</div><div>${escHtml(p.explanation || '')}</div></div>` + scaledNote + refBlock;
+    markSolved(p.num);
+  } catch (e) {
+    if (e.timeout) { appendOutput('✗ Judging stopped after timeout — the SQL engine was reset.', 'out-err'); sqlReady = false; sqlPrepared = null; }
+    else appendOutput('✗ ' + (e.message || e), 'out-err');
+  } finally {
+    isRunning = false;
+    if (sqlEngine && sqlEngine.ready) { runBtn.disabled = false; runBtn.innerHTML = '▶ Run <kbd>⌘↵</kbd>'; submitBtn.innerHTML = '✓ Submit <kbd>⌘⇧↵</kbd>'; submitBtn.disabled = false; }
+  }
+}
+
+document.querySelectorAll('#mode-switch .mode-btn').forEach(b =>
+  b.addEventListener('click', () => setMode(b.dataset.mode)));
+
 // ─── Boot ───
 (async function boot() {
   await initEditor();
   await loadProblems();
   initEngine();
+  loadSqlProblems();   // static SQL curriculum; non-blocking, no backend
 })();
 
 // ── AI Tutor bridge: expose live app state to tutor.js (separate script) ──
