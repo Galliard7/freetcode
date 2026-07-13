@@ -42,21 +42,32 @@
   const shareOn = () => localStorage.getItem(SHARE_KEY) === '1';
   const lastShared = {};   // problemNum -> snapshot last sent (session-scoped dedup)
 
-  const SYSTEM = `You are a friendly, concise coding tutor inside FreetCode, a Python practice platform.
-Help the student LEARN — give Socratic nudges and minimal examples, not full solutions.
-- Prefer hints and small illustrative snippets over complete answers.
-- You may be shown the reference solution; use it to steer your hints, but do not paste it wholesale unless the student explicitly asks to see the full solution.
-- Point at the specific issue in THEIR code. Use the judge's verdict when provided; never invent numbers.
-- For complexity, explain relative to the optimal.
-- For general Python or syntax questions, just answer them directly and briefly.
-Keep replies short and conversational.`;
+  const SYSTEM = `You are a concise coding tutor inside FreetCode, a Python practice platform. Your job is to help the student figure it out THEMSELVES, not to solve it for them.
+
+BREVITY (most important):
+- Default to 1–3 short sentences. No preamble, no recap of the problem, no summary.
+- Answer only what was asked. Don't volunteer extra tips, alternative approaches, or next steps unless asked.
+
+NEVER WRITE THE SOLUTION:
+- Do NOT output full or near-full code solutions. There is a "Show solution" button for that — if the student wants the whole thing, tell them to use it.
+- Even when explicitly asked to "just write it," decline the full solution; instead point them to the Show solution button and give one targeted hint.
+- You may show at most a tiny fragment (a single line or expression) ONLY to illustrate a specific syntax point the student asked about — never a working chunk of their answer.
+- You are shown the reference solution for grounding ONLY. Never paste it, quote it, or reconstruct it. Use it silently to aim your hints.
+
+WHAT TO DO INSTEAD:
+- Point at the specific spot in THEIR code that's relevant — quote a short fragment of it and ask a question or name the issue.
+- If they ask about a specific part ("what does this line do", "why is this wrong"), explain just that part.
+- Use the judge's verdict when provided; never invent numbers. For complexity, state it relative to optimal in one line.
+- For general Python/syntax questions, answer directly and briefly.
+
+If unsure, say so rather than guessing. Never fabricate code or output.`;
 
   const QUICK = {
-    hint: "I'm stuck — give me a hint without revealing the full solution.",
-    explain: "Explain the approach for this problem step by step.",
-    review: "Review my current code and point out any issues.",
-    pattern: "What algorithmic pattern does this problem use, and how do I recognize it?",
-    complexity: "What's the time and space complexity of my current code, relative to optimal?",
+    hint: "I'm stuck — give me ONE small hint without revealing the solution or writing code.",
+    explain: "In 2–3 sentences, what's the high-level idea for this problem? No code, no step-by-step walkthrough.",
+    review: "Look at my current code and point out the single most important issue, in one or two sentences. Don't rewrite it for me.",
+    pattern: "What algorithmic pattern does this problem use, and how do I recognize it? Keep it brief.",
+    complexity: "What's the time and space complexity of my current code, relative to optimal? One line.",
   };
 
   // ── grounding pulled live from the running app ──
@@ -191,7 +202,7 @@ Keep replies short and conversational.`;
     streaming = true;
     try {
       const stream = await engine.chat.completions.create({
-        messages: payload, stream: true, temperature: 0.4, max_tokens: 600,
+        messages: payload, stream: true, temperature: 0.3, max_tokens: 350,
       });
       let acc = '';
       for await (const chunk of stream) {
