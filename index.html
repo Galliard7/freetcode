@@ -53,7 +53,50 @@
         <button class="mode-btn active" data-mode="algo">Algo</button>
         <button class="mode-btn" data-mode="sql">SQL</button>
       </div>
+      <div class="rand-wrap" id="rand-wrap">
+        <button class="btn btn-ghost rand-btn" id="rand-btn" title="Random problem — pick topics to test yourself">🎲 <span class="btn-text">Random</span></button>
+        <div class="rand-pop" id="rand-pop" hidden>
+          <div class="rand-pop-head">Random problem</div>
+          <div class="rand-sec-label">Difficulty</div>
+          <div class="rand-diffs" id="rand-diffs"></div>
+          <div class="rand-sec-label">Categories
+            <button class="rand-mini" id="rand-cat-all" type="button">all</button>
+            <button class="rand-mini" id="rand-cat-none" type="button">none</button>
+          </div>
+          <div class="rand-cats" id="rand-cats"></div>
+          <div class="rand-foot">
+            <span class="rand-count" id="rand-count"></span>
+            <button class="rand-go" id="rand-go">🎲 Go</button>
+          </div>
+        </div>
+      </div>
       <style>
+        .rand-wrap{position:relative;margin-left:8px}
+        .rand-pop{position:absolute;top:calc(100% + 6px);left:0;z-index:70;width:272px;background:var(--bg-elev,#161b22);border:1px solid var(--border,#30363d);border-radius:10px;padding:12px;box-shadow:0 8px 28px rgba(0,0,0,.45)}
+        .rand-pop[hidden]{display:none}
+        .rand-pop-head{font-size:13px;font-weight:700;margin-bottom:2px;color:var(--fg,#e6edf3)}
+        .rand-sec-label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted,#8b949e);margin:12px 0 6px;display:flex;align-items:center;gap:4px}
+        .rand-mini{margin-left:auto;background:transparent;border:1px solid var(--border,#30363d);color:var(--fg-muted,#8b949e);border-radius:5px;font-size:10px;padding:1px 7px;cursor:pointer;text-transform:none;letter-spacing:0}
+        .rand-mini:hover{color:var(--fg,#e6edf3);border-color:var(--fg-muted,#8b949e)}
+        .rand-mini#rand-cat-all{margin-left:auto}
+        .rand-mini#rand-cat-none{margin-left:0}
+        .rand-diffs{display:flex;gap:6px;flex-wrap:wrap}
+        .rand-pill{background:transparent;border:1px solid var(--border,#30363d);color:var(--fg-muted,#8b949e);border-radius:6px;font:inherit;font-size:12px;font-weight:600;padding:3px 11px;cursor:pointer;opacity:.5}
+        .rand-pill.on{opacity:1;color:#fff}
+        .rand-pill.learn.on{background:var(--accent2,#58a6ff);border-color:var(--accent2,#58a6ff)}
+        .rand-pill.easy.on{background:var(--easy,#3fb950);border-color:var(--easy,#3fb950)}
+        .rand-pill.medium.on{background:var(--medium,#d29922);border-color:var(--medium,#d29922)}
+        .rand-pill.hard.on{background:var(--hard,#f85149);border-color:var(--hard,#f85149)}
+        .rand-cats{max-height:224px;overflow-y:auto;display:flex;flex-direction:column;gap:1px;margin:0 -4px;padding:0 4px}
+        .rand-cat{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg,#e6edf3);padding:3px 5px;border-radius:5px;cursor:pointer}
+        .rand-cat:hover{background:var(--bg-base,#0d1117)}
+        .rand-cat input{accent-color:var(--accent,#238636);cursor:pointer;margin:0}
+        .rand-cat-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .rand-cat-n{color:var(--fg-muted,#8b949e);font-size:11px}
+        .rand-foot{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border,#30363d)}
+        .rand-count{font-size:11px;color:var(--fg-muted,#8b949e)}
+        .rand-go{margin-left:auto;background:var(--accent,#238636);color:#fff;border:0;border-radius:6px;font:inherit;font-weight:600;font-size:13px;padding:5px 15px;cursor:pointer}
+        .rand-go:disabled{opacity:.5;cursor:not-allowed}
         .mode-switch{display:inline-flex;gap:2px;background:var(--bg-elev,#161b22);border:1px solid var(--border,#30363d);border-radius:8px;padding:2px;margin-left:10px}
         .mode-btn{background:transparent;border:0;color:var(--fg-muted,#8b949e);padding:4px 14px;border-radius:6px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
         .mode-btn.active{background:var(--accent,#238636);color:#fff}
@@ -1748,6 +1791,7 @@ function ensureSqlEngine() {
 async function setMode(mode) {
   if (mode === currentMode) return;
   currentMode = mode;
+  if (typeof toggleRandPop === 'function') toggleRandPop(false);   // its category list is mode-specific
   document.querySelectorAll('#mode-switch .mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   currentCollection = 'all';
   currentProblem = null;
@@ -1878,6 +1922,121 @@ async function submitSql() {
 
 document.querySelectorAll('#mode-switch .mode-btn').forEach(b =>
   b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+// ─── Randomizer: single button + topic popover, current-mode only ───
+// Filters are stored as EXCLUSIONS (per mode) so categories/difficulties added
+// to the curriculum later default to *included*. Default {} = everything on →
+// first press with no config is a fully random draw. Design locked 2026-07-13.
+const RAND_DIFF_ORDER = ['Learn', 'Easy', 'Medium', 'Hard'];
+let randExcluded = (() => {
+  try { return JSON.parse(localStorage.getItem('freetcode_rand_filters')) || {}; }
+  catch (_) { return {}; }
+})();
+const randRecent = { algo: [], sql: [] };   // no-immediate-repeat memory, per mode
+
+function randEx(mode) {
+  const e = randExcluded[mode] || (randExcluded[mode] = { cats: [], diffs: [] });
+  if (!e.cats) e.cats = [];
+  if (!e.diffs) e.diffs = [];
+  return e;
+}
+function saveRandFilters() {
+  try { localStorage.setItem('freetcode_rand_filters', JSON.stringify(randExcluded)); } catch (_) {}
+}
+function randPool() {
+  const ex = randEx(currentMode);
+  const exCats = new Set(ex.cats), exDiffs = new Set(ex.diffs);
+  return activeProblems().filter(p =>
+    p.num > 0 && !exCats.has(p.category) && !exDiffs.has(p.difficulty || 'Easy'));
+}
+
+function renderRandPop() {
+  const ex = randEx(currentMode);
+  const exCats = new Set(ex.cats), exDiffs = new Set(ex.diffs);
+  const probs = activeProblems().filter(p => p.num > 0);
+
+  const diffsPresent = RAND_DIFF_ORDER.filter(d => probs.some(p => (p.difficulty || 'Easy') === d));
+  document.getElementById('rand-diffs').innerHTML = diffsPresent.map(d =>
+    `<button type="button" class="rand-pill ${d.toLowerCase()}${exDiffs.has(d) ? '' : ' on'}" data-diff="${d}">${d}</button>`
+  ).join('');
+
+  const order = activeCategoryOrder();
+  const catsPresent = [...new Set(probs.map(p => p.category))].sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  document.getElementById('rand-cats').innerHTML = catsPresent.map(c => {
+    const n = probs.filter(p => p.category === c).length;
+    return `<label class="rand-cat"><input type="checkbox" data-cat="${escHtml(c)}"${exCats.has(c) ? '' : ' checked'}>` +
+           `<span class="rand-cat-name">${escHtml(c)}</span><span class="rand-cat-n">${n}</span></label>`;
+  }).join('');
+
+  updateRandCount();
+}
+
+function updateRandCount() {
+  const n = randPool().length;
+  document.getElementById('rand-count').textContent = n ? `${n} in pool` : 'No problems match';
+  document.getElementById('rand-go').disabled = n === 0;
+}
+
+function toggleRandPop(show) {
+  const pop = document.getElementById('rand-pop');
+  const wrap = document.getElementById('rand-wrap');
+  const willShow = show === undefined ? pop.hidden : show;
+  if (willShow) { renderRandPop(); pop.hidden = false; wrap.classList.add('open'); }
+  else { pop.hidden = true; wrap.classList.remove('open'); }
+}
+
+function drawRandom() {
+  const pool = randPool();
+  if (!pool.length) return false;
+  const recent = randRecent[currentMode];
+  let candidates = pool.filter(p => !recent.includes(p.num));
+  if (!candidates.length) {                       // pool exhausted → reshuffle
+    const last = recent[recent.length - 1];        // but never repeat back-to-back
+    recent.length = 0;
+    candidates = pool.filter(p => p.num !== last);
+    if (!candidates.length) candidates = pool;     // pool of 1
+  }
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  recent.push(pick.num);
+  selectProblem(pick);
+  setTimeout(() => {
+    const item = problemListEl.querySelector(`.problem-item[data-num="${pick.num}"]`);
+    if (item) item.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 0);
+  return true;
+}
+
+document.getElementById('rand-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleRandPop(); });
+document.getElementById('rand-go').addEventListener('click', () => { if (drawRandom()) toggleRandPop(false); });
+document.getElementById('rand-diffs').addEventListener('click', (e) => {
+  const b = e.target.closest('.rand-pill'); if (!b) return;
+  const ex = randEx(currentMode), s = new Set(ex.diffs);
+  s.has(b.dataset.diff) ? s.delete(b.dataset.diff) : s.add(b.dataset.diff);
+  ex.diffs = [...s]; saveRandFilters();
+  b.classList.toggle('on'); updateRandCount();
+});
+document.getElementById('rand-cats').addEventListener('change', (e) => {
+  const cb = e.target.closest('input[data-cat]'); if (!cb) return;
+  const ex = randEx(currentMode), s = new Set(ex.cats);
+  cb.checked ? s.delete(cb.dataset.cat) : s.add(cb.dataset.cat);
+  ex.cats = [...s]; saveRandFilters(); updateRandCount();
+});
+document.getElementById('rand-cat-all').addEventListener('click', () => {
+  randEx(currentMode).cats = []; saveRandFilters(); renderRandPop();
+});
+document.getElementById('rand-cat-none').addEventListener('click', () => {
+  randEx(currentMode).cats = [...new Set(activeProblems().filter(p => p.num > 0).map(p => p.category))];
+  saveRandFilters(); renderRandPop();
+});
+document.addEventListener('click', (e) => {
+  if (!document.getElementById('rand-wrap').contains(e.target)) toggleRandPop(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('rand-pop').hidden) toggleRandPop(false);
+});
 
 // ─── Boot ───
 (async function boot() {
