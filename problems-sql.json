@@ -1,15 +1,49 @@
 {
-  "version": 2,
+  "version": 3,
   "note": "FreetCode SQL curriculum. Dialect: PostgreSQL (PGlite). setup = array of statements joined with newlines. oracle = the reference query. Lists: 'foundations' | 'signal'; Freet SQL = the whole set.",
   "datasets": {
     "fintech": {
       "label": "Fintech — payments",
       "blurb": "A card-payments company. Users make transactions at merchants; some are declined or refunded, some are disputed.",
       "tables": [
-        { "name": "users", "columns": ["user_id int", "signup_date date", "country text", "segment text"] },
-        { "name": "merchants", "columns": ["merchant_id int", "name text", "category text"] },
-        { "name": "transactions", "columns": ["txn_id int", "user_id int", "merchant_id int", "amount numeric", "status text", "created_at timestamp"] },
-        { "name": "disputes", "columns": ["dispute_id int", "txn_id int", "reason text", "created_at date", "resolved boolean"] }
+        {
+          "name": "users",
+          "columns": [
+            "user_id int",
+            "signup_date date",
+            "country text",
+            "segment text"
+          ]
+        },
+        {
+          "name": "merchants",
+          "columns": [
+            "merchant_id int",
+            "name text",
+            "category text"
+          ]
+        },
+        {
+          "name": "transactions",
+          "columns": [
+            "txn_id int",
+            "user_id int",
+            "merchant_id int",
+            "amount numeric",
+            "status text",
+            "created_at timestamp"
+          ]
+        },
+        {
+          "name": "disputes",
+          "columns": [
+            "dispute_id int",
+            "txn_id int",
+            "reason text",
+            "created_at date",
+            "resolved boolean"
+          ]
+        }
       ],
       "setup": [
         "CREATE TABLE users (user_id int, signup_date date, country text, segment text);",
@@ -26,9 +60,30 @@
       "label": "SaaS — product analytics",
       "blurb": "A subscription product. Users sign up, log in over time, and move through an activation funnel (visited → signed_up → activated → paid).",
       "tables": [
-        { "name": "users", "columns": ["user_id int", "signup_date date", "country text", "plan text"] },
-        { "name": "logins", "columns": ["user_id int", "login_date date"] },
-        { "name": "funnel", "columns": ["user_id int", "step text", "created_at timestamp"] }
+        {
+          "name": "users",
+          "columns": [
+            "user_id int",
+            "signup_date date",
+            "country text",
+            "plan text"
+          ]
+        },
+        {
+          "name": "logins",
+          "columns": [
+            "user_id int",
+            "login_date date"
+          ]
+        },
+        {
+          "name": "funnel",
+          "columns": [
+            "user_id int",
+            "step text",
+            "created_at timestamp"
+          ]
+        }
       ],
       "setup": [
         "CREATE TABLE users (user_id int, signup_date date, country text, plan text);",
@@ -43,14 +98,109 @@
       "label": "Experiments — A/B test",
       "blurb": "One A/B test. Each user is assigned to control or treatment, and each has an outcome row recording whether they converted and how much revenue they generated.",
       "tables": [
-        { "name": "assignments", "columns": ["user_id int", "variant text"] },
-        { "name": "outcomes", "columns": ["user_id int", "converted boolean", "revenue numeric"] }
+        {
+          "name": "assignments",
+          "columns": [
+            "user_id int",
+            "variant text"
+          ]
+        },
+        {
+          "name": "outcomes",
+          "columns": [
+            "user_id int",
+            "converted boolean",
+            "revenue numeric"
+          ]
+        }
       ],
       "setup": [
         "CREATE TABLE assignments (user_id int, variant text);",
         "INSERT INTO assignments VALUES (1,'control'),(2,'control'),(3,'control'),(4,'control'),(5,'control'),(6,'control'),(7,'treatment'),(8,'treatment'),(9,'treatment'),(10,'treatment'),(11,'treatment'),(12,'treatment');",
         "CREATE TABLE outcomes (user_id int, converted boolean, revenue numeric);",
         "INSERT INTO outcomes VALUES (1,true,50.00),(2,false,0),(3,true,30.00),(4,false,0),(5,false,0),(6,false,0),(7,true,40.00),(8,true,60.00),(9,false,0),(10,true,20.00),(11,true,80.00),(12,false,0);"
+      ]
+    },
+    "hr": {
+      "label": "HR — employees & departments",
+      "blurb": "A company org chart. Employees belong to departments and report to a manager (another employee); the CEO has no manager.",
+      "tables": [
+        {
+          "name": "departments",
+          "columns": [
+            "dept_id int",
+            "name text"
+          ]
+        },
+        {
+          "name": "employees",
+          "columns": [
+            "emp_id int",
+            "name text",
+            "dept_id int",
+            "manager_id int",
+            "salary numeric",
+            "hire_date date"
+          ]
+        }
+      ],
+      "setup": [
+        "CREATE TABLE departments (dept_id int, name text);",
+        "INSERT INTO departments VALUES (1,'Engineering'),(2,'Sales'),(3,'Marketing'),(4,'Support');",
+        "CREATE TABLE employees (emp_id int, name text, dept_id int, manager_id int, salary numeric, hire_date date);",
+        "INSERT INTO employees VALUES (1,'Nadia',1,NULL,250000,'2020-03-01'),(2,'Omar',1,1,160000,'2021-05-15'),(3,'Priya',1,2,120000,'2022-02-01'),(4,'Quinn',1,2,115000,'2022-06-20'),(5,'Raj',1,2,120000,'2023-01-10'),(6,'Sara',2,1,150000,'2021-08-01'),(7,'Tom',2,6,90000,'2022-09-05'),(8,'Uma',2,6,95000,'2023-03-12'),(9,'Vince',3,1,140000,'2021-11-01'),(10,'Wendy',3,9,145000,'2022-12-01'),(11,'Xander',4,1,130000,'2022-04-18'),(12,'Yara',4,11,135000,'2023-07-22');"
+      ]
+    },
+    "ecommerce": {
+      "label": "E-commerce — orders",
+      "blurb": "An online store. Customers place orders (completed, cancelled, or returned); each order has line items referencing products.",
+      "tables": [
+        {
+          "name": "customers",
+          "columns": [
+            "customer_id int",
+            "name text",
+            "country text",
+            "signup_date date"
+          ]
+        },
+        {
+          "name": "products",
+          "columns": [
+            "product_id int",
+            "name text",
+            "category text",
+            "price numeric"
+          ]
+        },
+        {
+          "name": "orders",
+          "columns": [
+            "order_id int",
+            "customer_id int",
+            "order_date date",
+            "status text"
+          ]
+        },
+        {
+          "name": "order_items",
+          "columns": [
+            "order_id int",
+            "product_id int",
+            "quantity int",
+            "unit_price numeric"
+          ]
+        }
+      ],
+      "setup": [
+        "CREATE TABLE customers (customer_id int, name text, country text, signup_date date);",
+        "INSERT INTO customers VALUES (1,'Alice','US','2024-11-05'),(2,'Bob','US','2024-12-01'),(3,'Carla','CA','2025-01-10'),(4,'Dan','GB','2025-01-15'),(5,'Eve','US','2025-02-02'),(6,'Frank','CA','2025-02-20'),(7,'Grace','GB','2025-03-01'),(8,'Heidi','US','2025-03-15');",
+        "CREATE TABLE products (product_id int, name text, category text, price numeric);",
+        "INSERT INTO products VALUES (101,'Widget','gadgets',9.99),(102,'Gizmo','gadgets',19.99),(103,'Doohickey','gadgets',4.99),(104,'Notebook','office',12.50),(105,'Pen Set','office',7.25),(106,'Desk Lamp','home',34.00),(107,'Mug','home',8.00),(108,'Headphones','electronics',59.99),(109,'Cable','electronics',5.50),(110,'Keyboard','electronics',45.00);",
+        "CREATE TABLE orders (order_id int, customer_id int, order_date date, status text);",
+        "INSERT INTO orders VALUES (1001,1,'2025-01-05','completed'),(1002,1,'2025-02-10','completed'),(1003,2,'2025-01-20','completed'),(1004,2,'2025-02-15','cancelled'),(1005,3,'2025-02-01','completed'),(1006,3,'2025-03-05','completed'),(1007,4,'2025-02-18','returned'),(1008,4,'2025-03-10','completed'),(1009,5,'2025-03-02','completed'),(1010,1,'2025-03-20','completed'),(1011,5,'2025-03-25','completed'),(1012,6,'2025-03-28','completed'),(1013,2,'2025-04-01','completed'),(1014,7,'2025-04-05','cancelled'),(1015,3,'2025-04-10','completed'),(1016,8,'2025-04-12','completed'),(1017,1,'2025-04-15','completed'),(1018,5,'2025-04-20','returned'),(1019,4,'2025-04-22','completed'),(1020,6,'2025-04-25','completed');",
+        "CREATE TABLE order_items (order_id int, product_id int, quantity int, unit_price numeric);",
+        "INSERT INTO order_items VALUES (1001,101,2,9.99),(1001,104,1,12.50),(1002,108,1,59.99),(1003,102,3,19.99),(1003,109,2,5.50),(1004,106,1,34.00),(1005,110,1,45.00),(1005,105,2,7.25),(1006,101,1,9.99),(1006,103,4,4.99),(1007,108,1,59.99),(1008,107,2,8.00),(1009,102,1,19.99),(1009,108,1,59.99),(1010,110,1,45.00),(1011,104,3,12.50),(1012,101,5,9.99),(1013,106,1,34.00),(1013,107,1,8.00),(1014,102,1,19.99),(1015,108,2,59.99),(1016,103,2,4.99),(1016,105,1,7.25),(1017,109,3,5.50),(1018,110,1,45.00),(1019,101,1,9.99),(1019,102,1,19.99),(1019,108,1,59.99),(1020,104,2,12.50);"
       ]
     }
   },
@@ -61,12 +211,17 @@
       "title": "Large approved payments",
       "difficulty": "Easy",
       "category": "Filtering & Sorting",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "Return every **approved** transaction with an `amount` greater than 100. Show `txn_id`, `user_id`, and `amount`, with the **largest amount first**; break ties by `txn_id` ascending.",
       "oracle": "SELECT txn_id, user_id, amount FROM transactions WHERE status = 'approved' AND amount > 100 ORDER BY amount DESC, txn_id",
       "ordered": true,
-      "hints": ["Filter on both `status` and `amount` in the WHERE clause.", "`ORDER BY amount DESC, txn_id` gives a fully deterministic order."],
+      "hints": [
+        "Filter on both `status` and `amount` in the WHERE clause.",
+        "`ORDER BY amount DESC, txn_id` gives a fully deterministic order."
+      ],
       "explanation": "A straight filter + sort. Note that `status = 'approved'` excludes declined and refunded rows, and the tie-breaker on `txn_id` makes the ordering deterministic when two amounts are equal.",
       "wrongExample": "SELECT txn_id, user_id, amount FROM transactions WHERE amount > 100 ORDER BY amount DESC, txn_id"
     },
@@ -76,12 +231,17 @@
       "title": "Approved spend per user",
       "difficulty": "Easy",
       "category": "Aggregation",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "For each user, return their total **approved** spend as `total_approved`. Order by `total_approved` descending, then `user_id`. Only users with at least one approved transaction should appear.",
       "oracle": "SELECT user_id, SUM(amount) AS total_approved FROM transactions WHERE status = 'approved' GROUP BY user_id ORDER BY total_approved DESC, user_id",
       "ordered": true,
-      "hints": ["`GROUP BY user_id` and `SUM(amount)`.", "Filter to approved rows before aggregating."],
+      "hints": [
+        "`GROUP BY user_id` and `SUM(amount)`.",
+        "Filter to approved rows before aggregating."
+      ],
       "explanation": "Filtering to approved rows *before* the GROUP BY means declined/refunded amounts never enter the sum. Users with no approved rows simply don't survive the WHERE, so they're absent."
     },
     {
@@ -90,12 +250,17 @@
       "title": "Label transactions with merchants",
       "difficulty": "Easy",
       "category": "Joins",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "For every **approved** transaction, return `txn_id`, the merchant `name`, the merchant `category`, and the `amount`, ordered by `txn_id`.",
       "oracle": "SELECT t.txn_id, m.name, m.category, t.amount FROM transactions t JOIN merchants m ON t.merchant_id = m.merchant_id WHERE t.status = 'approved' ORDER BY t.txn_id",
       "ordered": true,
-      "hints": ["Join `transactions` to `merchants` on `merchant_id`.", "An inner JOIN is fine here — every transaction has a valid merchant."],
+      "hints": [
+        "Join `transactions` to `merchants` on `merchant_id`.",
+        "An inner JOIN is fine here — every transaction has a valid merchant."
+      ],
       "explanation": "A basic inner join. Because every transaction references a real merchant, INNER vs LEFT join give the same rows here — but see the next problem for when that difference bites."
     },
     {
@@ -104,12 +269,18 @@
       "title": "Count approved per user (including zero)",
       "difficulty": "Medium",
       "category": "Joins",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "Return **every** user and their number of approved transactions as `approved_txns` — including users with **zero**. Order by `approved_txns` descending, then `user_id`.",
       "oracle": "SELECT u.user_id, COUNT(t.txn_id) AS approved_txns FROM users u LEFT JOIN transactions t ON t.user_id = u.user_id AND t.status = 'approved' GROUP BY u.user_id ORDER BY approved_txns DESC, u.user_id",
       "ordered": true,
-      "hints": ["Start FROM `users` and LEFT JOIN transactions so users with none survive.", "Put `status = 'approved'` in the ON clause, not WHERE — a WHERE filter would drop the zero-count users.", "`COUNT(t.txn_id)` counts non-null matches, so it's 0 for unmatched users."],
+      "hints": [
+        "Start FROM `users` and LEFT JOIN transactions so users with none survive.",
+        "Put `status = 'approved'` in the ON clause, not WHERE — a WHERE filter would drop the zero-count users.",
+        "`COUNT(t.txn_id)` counts non-null matches, so it's 0 for unmatched users."
+      ],
       "explanation": "The classic denominator trap: to keep users with zero approved transactions, the status filter must live in the ON clause. Moving it to WHERE would turn the LEFT JOIN back into an inner join and silently drop those users — exactly the kind of bug that corrupts a retention or conversion rate.",
       "wrongExample": "SELECT u.user_id, COUNT(t.txn_id) AS approved_txns FROM users u LEFT JOIN transactions t ON t.user_id = u.user_id WHERE t.status = 'approved' GROUP BY u.user_id ORDER BY approved_txns DESC, u.user_id"
     },
@@ -119,12 +290,17 @@
       "title": "Repeat approved users",
       "difficulty": "Medium",
       "category": "Aggregation",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "Return each `user_id` with `n` = their number of approved transactions, but only for users with **at least 2** approved transactions. Order by `n` descending, then `user_id`.",
       "oracle": "SELECT user_id, COUNT(*) AS n FROM transactions WHERE status = 'approved' GROUP BY user_id HAVING COUNT(*) >= 2 ORDER BY n DESC, user_id",
       "ordered": true,
-      "hints": ["Filter groups with HAVING, not WHERE.", "WHERE filters rows before grouping; HAVING filters after."],
+      "hints": [
+        "Filter groups with HAVING, not WHERE.",
+        "WHERE filters rows before grouping; HAVING filters after."
+      ],
       "explanation": "HAVING applies to the aggregated groups. You can't use WHERE for `COUNT(*) >= 2` because the count doesn't exist until after grouping."
     },
     {
@@ -133,12 +309,17 @@
       "title": "Declined-only countries",
       "difficulty": "Medium",
       "category": "Set Ops",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "Return each `country` that has had at least one **declined** transaction but **no refunded** transaction. Use a set operation. Order by `country`.",
       "oracle": "SELECT u.country FROM users u JOIN transactions t ON t.user_id = u.user_id WHERE t.status = 'declined' EXCEPT SELECT u.country FROM users u JOIN transactions t ON t.user_id = u.user_id WHERE t.status = 'refunded' ORDER BY country",
       "ordered": true,
-      "hints": ["`EXCEPT` subtracts the second result set from the first.", "Each side joins users to transactions and filters by status."],
+      "hints": [
+        "`EXCEPT` subtracts the second result set from the first.",
+        "Each side joins users to transactions and filters by status."
+      ],
       "explanation": "EXCEPT returns rows from the first query not present in the second, and de-duplicates automatically — so it doubles as a DISTINCT. The result is countries touched by a decline but never by a refund."
     },
     {
@@ -147,12 +328,17 @@
       "title": "Bucket payments by size",
       "difficulty": "Easy",
       "category": "Conditional Logic",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "For every **approved** transaction, label its size: `'large'` when `amount` >= 500, `'medium'` when `amount` >= 100 (but < 500), otherwise `'small'`. Return `txn_id`, `amount`, and the label as `bucket`, ordered by `txn_id`.",
       "oracle": "SELECT txn_id, amount, CASE WHEN amount >= 500 THEN 'large' WHEN amount >= 100 THEN 'medium' ELSE 'small' END AS bucket FROM transactions WHERE status = 'approved' ORDER BY txn_id",
       "ordered": true,
-      "hints": ["A `CASE` expression evaluates its WHEN branches top to bottom.", "Order the thresholds from highest to lowest so the >= 100 branch doesn't swallow the >= 500 case."],
+      "hints": [
+        "A `CASE` expression evaluates its WHEN branches top to bottom.",
+        "Order the thresholds from highest to lowest so the >= 100 branch doesn't swallow the >= 500 case."
+      ],
       "explanation": "CASE branches are evaluated in order and short-circuit on the first match, so putting the >= 500 test first is what makes the bucketing correct. Reversing the order would label every large payment as 'medium'."
     },
     {
@@ -161,12 +347,17 @@
       "title": "Above the average payment",
       "difficulty": "Medium",
       "category": "Subqueries & CTEs",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "Return every **approved** transaction whose `amount` is strictly greater than the average approved amount. Show `txn_id` and `amount`, largest first, tie-broken by `txn_id`.",
       "oracle": "SELECT txn_id, amount FROM transactions WHERE status = 'approved' AND amount > (SELECT AVG(amount) FROM transactions WHERE status = 'approved') ORDER BY amount DESC, txn_id",
       "ordered": true,
-      "hints": ["A scalar subquery `(SELECT AVG(amount) ...)` computes the benchmark once.", "Both the outer query and the subquery must filter to approved rows for a fair comparison."],
+      "hints": [
+        "A scalar subquery `(SELECT AVG(amount) ...)` computes the benchmark once.",
+        "Both the outer query and the subquery must filter to approved rows for a fair comparison."
+      ],
       "explanation": "A scalar subquery is evaluated once and compared against every row. Note both sides filter to approved — comparing individual approved amounts against an average that included declines would be a subtle metric bug."
     },
     {
@@ -175,12 +366,17 @@
       "title": "Approved revenue by month",
       "difficulty": "Easy",
       "category": "Date/Time",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "Return total **approved** revenue per calendar month. Columns: `mon` (the month via `date_trunc`) and `revenue`. Order by `mon`.",
       "oracle": "SELECT date_trunc('month', created_at) AS mon, SUM(amount) AS revenue FROM transactions WHERE status = 'approved' GROUP BY 1 ORDER BY mon",
       "ordered": true,
-      "hints": ["`date_trunc('month', created_at)` collapses every timestamp to the first of its month.", "Group by that truncated month, then SUM."],
+      "hints": [
+        "`date_trunc('month', created_at)` collapses every timestamp to the first of its month.",
+        "Group by that truncated month, then SUM."
+      ],
       "explanation": "date_trunc is the workhorse for time bucketing in Postgres. Grouping by the truncated month turns a stream of timestamped transactions into a clean monthly series — the foundation for any trend or MoM calculation."
     },
     {
@@ -189,12 +385,17 @@
       "title": "Revenue by merchant category",
       "difficulty": "Medium",
       "category": "Aggregation",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "fintech",
       "prompt": "Return total **approved** revenue per merchant `category`. Columns: `category`, `revenue`. Order by `revenue` descending, then `category`.",
       "oracle": "SELECT m.category, SUM(t.amount) AS revenue FROM merchants m JOIN transactions t ON t.merchant_id = m.merchant_id WHERE t.status = 'approved' GROUP BY m.category ORDER BY revenue DESC, m.category",
       "ordered": true,
-      "hints": ["Join transactions to merchants to get the category, then GROUP BY category.", "Filter to approved before summing."],
+      "hints": [
+        "Join transactions to merchants to get the category, then GROUP BY category.",
+        "Filter to approved before summing."
+      ],
       "explanation": "Join-then-aggregate: the category lives on `merchants`, so you join first and group by the dimension you want. This is the shape of nearly every 'revenue by X' question."
     },
     {
@@ -203,12 +404,17 @@
       "title": "Running total per user",
       "difficulty": "Medium",
       "category": "Window Functions",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "fintech",
       "prompt": "For each **approved** transaction, return `user_id`, `created_at`, `amount`, and a `running_total` — the cumulative approved amount for that user up to and including this transaction, in time order. Order the output by `user_id`, then `created_at`.",
       "oracle": "SELECT user_id, created_at, amount, SUM(amount) OVER (PARTITION BY user_id ORDER BY created_at) AS running_total FROM transactions WHERE status = 'approved' ORDER BY user_id, created_at",
       "ordered": true,
-      "hints": ["`SUM(amount) OVER (PARTITION BY user_id ORDER BY created_at)` gives a per-user running total.", "The window's ORDER BY controls the accumulation order; the outer ORDER BY controls the display order."],
+      "hints": [
+        "`SUM(amount) OVER (PARTITION BY user_id ORDER BY created_at)` gives a per-user running total.",
+        "The window's ORDER BY controls the accumulation order; the outer ORDER BY controls the display order."
+      ],
       "explanation": "A windowed SUM with PARTITION BY user_id restarts the accumulation for each user, and the window ORDER BY makes it cumulative over time. This is the single most-tested SQL interview pattern."
     },
     {
@@ -217,12 +423,18 @@
       "title": "Each user's largest payment",
       "difficulty": "Medium",
       "category": "Window Functions",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "fintech",
       "prompt": "Return each user's single **largest approved** transaction: `user_id`, `txn_id`, `amount`. If a user had ties on amount, keep the smallest `txn_id`. Order by `user_id`.",
       "oracle": "SELECT user_id, txn_id, amount FROM (SELECT user_id, txn_id, amount, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY amount DESC, txn_id) AS rn FROM transactions WHERE status = 'approved') s WHERE rn = 1 ORDER BY user_id",
       "ordered": true,
-      "hints": ["Number each user's rows with ROW_NUMBER() ordered by amount DESC.", "Wrap it in a subquery/CTE and keep `rn = 1`.", "The tie-breaker in the window ORDER BY (`, txn_id`) makes the winner deterministic."],
+      "hints": [
+        "Number each user's rows with ROW_NUMBER() ordered by amount DESC.",
+        "Wrap it in a subquery/CTE and keep `rn = 1`.",
+        "The tie-breaker in the window ORDER BY (`, txn_id`) makes the winner deterministic."
+      ],
       "explanation": "ROW_NUMBER() over a per-user partition, then filter to rank 1 — the canonical 'top-N-per-group' pattern. RANK() would keep ties; ROW_NUMBER() with a tie-breaker guarantees exactly one row per user."
     },
     {
@@ -231,12 +443,18 @@
       "title": "De-duplicate transactions",
       "difficulty": "Hard",
       "category": "Window Functions",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "fintech",
       "prompt": "A retry bug created duplicate **approved** transactions — rows sharing the same `user_id`, `merchant_id`, and `amount`. Keep only the **earliest** row of each such group and return `txn_id`, `user_id`, `merchant_id`, `amount`, ordered by `txn_id`.",
       "oracle": "SELECT txn_id, user_id, merchant_id, amount FROM (SELECT txn_id, user_id, merchant_id, amount, ROW_NUMBER() OVER (PARTITION BY user_id, merchant_id, amount ORDER BY created_at, txn_id) AS rn FROM transactions WHERE status = 'approved') s WHERE rn = 1 ORDER BY txn_id",
       "ordered": true,
-      "hints": ["Partition by the columns that define a duplicate: `user_id, merchant_id, amount`.", "Order the window by `created_at` so `rn = 1` is the earliest.", "Keep only `rn = 1`."],
+      "hints": [
+        "Partition by the columns that define a duplicate: `user_id, merchant_id, amount`.",
+        "Order the window by `created_at` so `rn = 1` is the earliest.",
+        "Keep only `rn = 1`."
+      ],
       "explanation": "De-duplication via ROW_NUMBER(): partition by the natural key, order by recency, keep the first. This is how you clean a table with `SELECT` before deciding what to DELETE — and a common 'find the bug' interview task."
     },
     {
@@ -245,12 +463,18 @@
       "title": "Month-over-month revenue",
       "difficulty": "Medium",
       "category": "Window Functions",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "fintech",
       "prompt": "Return monthly **approved** revenue and its change vs the previous month. Columns: `mon` (the month, via `date_trunc`), `revenue`, and `mom_change` (this month's revenue minus last month's; NULL for the first month). Order by `mon`.",
       "oracle": "WITH monthly AS (SELECT date_trunc('month', created_at) AS mon, SUM(amount) AS revenue FROM transactions WHERE status = 'approved' GROUP BY 1) SELECT mon, revenue, revenue - LAG(revenue) OVER (ORDER BY mon) AS mom_change FROM monthly ORDER BY mon",
       "ordered": true,
-      "hints": ["Bucket rows into months with `date_trunc('month', created_at)`.", "Use a CTE for the monthly totals, then `LAG(revenue) OVER (ORDER BY mon)` for last month.", "`revenue - LAG(...)` is the change; it's NULL for the first month automatically."],
+      "hints": [
+        "Bucket rows into months with `date_trunc('month', created_at)`.",
+        "Use a CTE for the monthly totals, then `LAG(revenue) OVER (ORDER BY mon)` for last month.",
+        "`revenue - LAG(...)` is the change; it's NULL for the first month automatically."
+      ],
       "explanation": "A CTE computes the monthly grain; LAG() reaches back one row in month order to fetch the prior month's revenue. Decomposing with a CTE keeps the window logic readable — exactly the habit interviewers look for."
     },
     {
@@ -259,12 +483,17 @@
       "title": "Rank merchants by revenue",
       "difficulty": "Medium",
       "category": "Window Functions",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "fintech",
       "prompt": "Rank merchants by their total **approved** revenue, highest first. Columns: `name`, `revenue`, `rnk` (dense-free RANK, so ties would share a rank). Order by `rnk`, then `name`.",
       "oracle": "WITH r AS (SELECT m.name, SUM(t.amount) AS revenue FROM merchants m JOIN transactions t ON t.merchant_id = m.merchant_id WHERE t.status = 'approved' GROUP BY m.name) SELECT name, revenue, RANK() OVER (ORDER BY revenue DESC) AS rnk FROM r ORDER BY rnk, name",
       "ordered": true,
-      "hints": ["Aggregate revenue per merchant in a CTE first.", "`RANK() OVER (ORDER BY revenue DESC)` assigns the ranking over the aggregated rows."],
+      "hints": [
+        "Aggregate revenue per merchant in a CTE first.",
+        "`RANK() OVER (ORDER BY revenue DESC)` assigns the ranking over the aggregated rows."
+      ],
       "explanation": "Aggregate first, then rank the aggregates — you can't rank and sum in the same SELECT level. RANK() leaves gaps after ties (1,1,3); DENSE_RANK() would not (1,1,2). Knowing which to reach for is a common interview probe."
     },
     {
@@ -273,12 +502,18 @@
       "title": "Overall dispute rate",
       "difficulty": "Medium",
       "category": "Metric Debugging",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "fintech",
       "prompt": "Compute the overall **dispute rate**: the fraction of all transactions that have at least one dispute. Return a single column `dispute_rate`. Watch out for integer division.",
       "oracle": "SELECT COUNT(DISTINCT d.txn_id)::numeric / COUNT(DISTINCT t.txn_id) AS dispute_rate FROM transactions t LEFT JOIN disputes d ON d.txn_id = t.txn_id",
       "ordered": false,
-      "hints": ["LEFT JOIN transactions to disputes so every transaction is counted in the denominator.", "`COUNT(DISTINCT d.txn_id)` counts only disputed transactions; `COUNT(DISTINCT t.txn_id)` counts all.", "Cast to `numeric` to avoid integer division."],
+      "hints": [
+        "LEFT JOIN transactions to disputes so every transaction is counted in the denominator.",
+        "`COUNT(DISTINCT d.txn_id)` counts only disputed transactions; `COUNT(DISTINCT t.txn_id)` counts all.",
+        "Cast to `numeric` to avoid integer division."
+      ],
       "explanation": "The denominator must be all transactions, which is why we start from `transactions` and LEFT JOIN. Counting distinct txn_ids guards against double-counting a transaction with multiple disputes, and the ::numeric cast prevents the ratio from truncating to 0."
     },
     {
@@ -287,12 +522,17 @@
       "title": "Users per plan",
       "difficulty": "Easy",
       "category": "Aggregation",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "product",
       "prompt": "Count how many users are on each `plan`. Columns: `plan`, `users`. Order by `users` descending, then `plan`.",
       "oracle": "SELECT plan, COUNT(*) AS users FROM users GROUP BY plan ORDER BY users DESC, plan",
       "ordered": true,
-      "hints": ["`GROUP BY plan` then `COUNT(*)`.", "Add `plan` as a tie-breaker so equal counts sort deterministically."],
+      "hints": [
+        "`GROUP BY plan` then `COUNT(*)`.",
+        "Add `plan` as a tie-breaker so equal counts sort deterministically."
+      ],
       "explanation": "The simplest GROUP BY shape — one row per distinct plan. The `plan` tie-breaker matters here because several plans can share the same user count."
     },
     {
@@ -301,12 +541,18 @@
       "title": "Logins per user (including zero)",
       "difficulty": "Medium",
       "category": "Joins",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "product",
       "prompt": "Return every user and their number of logins as `logins`, including users who have **never** logged in. Order by `logins` descending, then `user_id`.",
       "oracle": "SELECT u.user_id, COUNT(l.login_date) AS logins FROM users u LEFT JOIN logins l ON l.user_id = u.user_id GROUP BY u.user_id ORDER BY logins DESC, u.user_id",
       "ordered": true,
-      "hints": ["LEFT JOIN from `users` so users with no logins survive.", "`COUNT(l.login_date)` is 0 for users with no matching login rows.", "`COUNT(*)` would wrongly count 1 for a never-logged-in user."],
+      "hints": [
+        "LEFT JOIN from `users` so users with no logins survive.",
+        "`COUNT(l.login_date)` is 0 for users with no matching login rows.",
+        "`COUNT(*)` would wrongly count 1 for a never-logged-in user."
+      ],
       "explanation": "COUNT of a column from the right side of a LEFT JOIN yields 0 for unmatched rows, whereas COUNT(*) would count the single all-NULL row as 1. That distinction is exactly what keeps a 'zero activity' user reported as zero.",
       "wrongExample": "SELECT u.user_id, COUNT(*) AS logins FROM users u LEFT JOIN logins l ON l.user_id = u.user_id GROUP BY u.user_id ORDER BY logins DESC, u.user_id"
     },
@@ -316,12 +562,17 @@
       "title": "Map plans to tiers",
       "difficulty": "Easy",
       "category": "Conditional Logic",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "product",
       "prompt": "Label each user's plan tier: `'high'` for enterprise, `'mid'` for pro, `'low'` for everything else. Return `user_id`, `plan`, and `tier`, ordered by `user_id`.",
       "oracle": "SELECT user_id, plan, CASE WHEN plan = 'enterprise' THEN 'high' WHEN plan = 'pro' THEN 'mid' ELSE 'low' END AS tier FROM users ORDER BY user_id",
       "ordered": true,
-      "hints": ["A `CASE` expression maps discrete values to labels.", "The final `ELSE` catches free (and any unexpected plan)."],
+      "hints": [
+        "A `CASE` expression maps discrete values to labels.",
+        "The final `ELSE` catches free (and any unexpected plan)."
+      ],
       "explanation": "CASE is SQL's if/else. The ELSE branch is a safety net — it guarantees every row gets a tier even if a new plan value appears later."
     },
     {
@@ -330,12 +581,17 @@
       "title": "Signups per month",
       "difficulty": "Easy",
       "category": "Date/Time",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "product",
       "prompt": "How many users signed up each month? Columns: `mon` (month via `date_trunc` on `signup_date`) and `signups`. Order by `mon`.",
       "oracle": "SELECT date_trunc('month', signup_date) AS mon, COUNT(*) AS signups FROM users GROUP BY 1 ORDER BY mon",
       "ordered": true,
-      "hints": ["`date_trunc('month', signup_date)` works on a date just as it does on a timestamp.", "Group by the truncated month."],
+      "hints": [
+        "`date_trunc('month', signup_date)` works on a date just as it does on a timestamp.",
+        "Group by the truncated month."
+      ],
       "explanation": "Bucketing signups by month is the first step of any acquisition or cohort report. date_trunc returns a timestamp at the first of the month, which sorts chronologically for free."
     },
     {
@@ -344,12 +600,17 @@
       "title": "Users who never logged in",
       "difficulty": "Medium",
       "category": "Subqueries & CTEs",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "product",
       "prompt": "Return the `user_id` of every user who has **never** logged in, ordered by `user_id`. Use an anti-join or `NOT EXISTS`.",
       "oracle": "SELECT user_id FROM users u WHERE NOT EXISTS (SELECT 1 FROM logins l WHERE l.user_id = u.user_id) ORDER BY user_id",
       "ordered": true,
-      "hints": ["`NOT EXISTS (SELECT 1 FROM logins l WHERE l.user_id = u.user_id)` keeps only users with no login rows.", "This is the safe anti-join pattern — `NOT IN` can misbehave if the subquery returns NULLs."],
+      "hints": [
+        "`NOT EXISTS (SELECT 1 FROM logins l WHERE l.user_id = u.user_id)` keeps only users with no login rows.",
+        "This is the safe anti-join pattern — `NOT IN` can misbehave if the subquery returns NULLs."
+      ],
       "explanation": "NOT EXISTS is the robust way to express 'has no matching rows'. Unlike `NOT IN`, it behaves correctly even when the inner column can be NULL — a favorite interview gotcha."
     },
     {
@@ -358,12 +619,17 @@
       "title": "US users on paid plans",
       "difficulty": "Easy",
       "category": "Filtering & Sorting",
-      "lists": ["foundations"],
+      "lists": [
+        "foundations"
+      ],
       "dataset": "product",
       "prompt": "Return `user_id` and `plan` for users in the `US` who are on a paid plan (`pro` or `enterprise`). Order by `user_id`.",
       "oracle": "SELECT user_id, plan FROM users WHERE country = 'US' AND plan IN ('pro','enterprise') ORDER BY user_id",
       "ordered": true,
-      "hints": ["Combine the country filter and an `IN (...)` list for the paid plans.", "`plan IN ('pro','enterprise')` is shorthand for two OR'd equality checks."],
+      "hints": [
+        "Combine the country filter and an `IN (...)` list for the paid plans.",
+        "`plan IN ('pro','enterprise')` is shorthand for two OR'd equality checks."
+      ],
       "explanation": "IN is concise sugar for a set of equality checks. Note that a US user on the free plan is correctly excluded — the AND ties both conditions together."
     },
     {
@@ -372,12 +638,18 @@
       "title": "Activation funnel conversion",
       "difficulty": "Medium",
       "category": "Cohort & Funnel",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "product",
       "prompt": "For each funnel `step`, return the number of distinct users who reached it (`users`) and its share of the top-of-funnel `visited` count as `pct_of_visited` (rounded to 3 decimals). Order by `users` descending, then `step`.",
       "oracle": "WITH c AS (SELECT step, COUNT(DISTINCT user_id) AS users FROM funnel GROUP BY step) SELECT step, users, round(users::numeric / (SELECT users FROM c WHERE step = 'visited'), 3) AS pct_of_visited FROM c ORDER BY users DESC, step",
       "ordered": true,
-      "hints": ["Count distinct users per step in a CTE.", "Divide each step's count by the `visited` count fetched with a scalar subquery over the same CTE.", "Cast to numeric so the ratio isn't integer-truncated."],
+      "hints": [
+        "Count distinct users per step in a CTE.",
+        "Divide each step's count by the `visited` count fetched with a scalar subquery over the same CTE.",
+        "Cast to numeric so the ratio isn't integer-truncated."
+      ],
       "explanation": "A funnel is just per-step distinct-user counts, normalized against the top step. Referencing the CTE twice — once for the rows, once for the `visited` denominator — is a clean way to express 'as a share of the start'. Distinct users (not row counts) is what makes it a real funnel."
     },
     {
@@ -386,12 +658,17 @@
       "title": "Monthly active users, MoM",
       "difficulty": "Medium",
       "category": "Window Functions",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "product",
       "prompt": "Return the number of distinct users who logged in each month (`active_users`) and the change vs the previous month (`mom_change`, NULL for the first month). Columns: `mon`, `active_users`, `mom_change`. Order by `mon`.",
       "oracle": "WITH m AS (SELECT date_trunc('month', login_date) AS mon, COUNT(DISTINCT user_id) AS active_users FROM logins GROUP BY 1) SELECT mon, active_users, active_users - LAG(active_users) OVER (ORDER BY mon) AS mom_change FROM m ORDER BY mon",
       "ordered": true,
-      "hints": ["First compute distinct active users per month in a CTE.", "Then `LAG(active_users) OVER (ORDER BY mon)` gives the prior month for the difference."],
+      "hints": [
+        "First compute distinct active users per month in a CTE.",
+        "Then `LAG(active_users) OVER (ORDER BY mon)` gives the prior month for the difference."
+      ],
       "explanation": "MAU is a distinct-user count per month; the MoM delta layers a LAG window on top. Counting DISTINCT users (a user can log in many times a month) is the correctness crux here."
     },
     {
@@ -400,12 +677,17 @@
       "title": "Days since previous login",
       "difficulty": "Medium",
       "category": "Window Functions",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "product",
       "prompt": "For each login, return `user_id`, `login_date`, and `days_since_prev` — the number of days since that user's previous login (NULL for their first). Order by `user_id`, then `login_date`.",
       "oracle": "SELECT user_id, login_date, login_date - LAG(login_date) OVER (PARTITION BY user_id ORDER BY login_date) AS days_since_prev FROM logins ORDER BY user_id, login_date",
       "ordered": true,
-      "hints": ["`LAG(login_date) OVER (PARTITION BY user_id ORDER BY login_date)` fetches the prior login for the same user.", "In Postgres, subtracting one date from another yields an integer number of days."],
+      "hints": [
+        "`LAG(login_date) OVER (PARTITION BY user_id ORDER BY login_date)` fetches the prior login for the same user.",
+        "In Postgres, subtracting one date from another yields an integer number of days."
+      ],
       "explanation": "PARTITION BY user_id keeps each user's gap calculation independent, and date minus date gives whole days in Postgres. This gap-between-events pattern underlies session detection, churn windows, and streak logic."
     },
     {
@@ -414,12 +696,17 @@
       "title": "Cumulative signups",
       "difficulty": "Medium",
       "category": "Window Functions",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "product",
       "prompt": "Return each user in signup order with a running count of users acquired so far. Columns: `user_id`, `signup_date`, `cum_users`. Order by `signup_date`, then `user_id`.",
       "oracle": "SELECT user_id, signup_date, COUNT(*) OVER (ORDER BY signup_date, user_id) AS cum_users FROM users ORDER BY signup_date, user_id",
       "ordered": true,
-      "hints": ["`COUNT(*) OVER (ORDER BY signup_date, user_id)` accumulates row by row.", "With an ORDER BY and no explicit frame, the window defaults to everything up to the current row."],
+      "hints": [
+        "`COUNT(*) OVER (ORDER BY signup_date, user_id)` accumulates row by row.",
+        "With an ORDER BY and no explicit frame, the window defaults to everything up to the current row."
+      ],
       "explanation": "An ordered window COUNT gives a running total of rows — here, cumulative user acquisition. Including `user_id` in the window ORDER BY makes the running count deterministic when two users share a signup date."
     },
     {
@@ -428,12 +715,18 @@
       "title": "Signup cohorts and activation",
       "difficulty": "Hard",
       "category": "Cohort & Funnel",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "product",
       "prompt": "Group users into cohorts by signup month. For each `cohort` month return `cohort_size` (users who signed up that month) and `ever_active` (how many of them logged in at least once). Order by `cohort`.",
       "oracle": "WITH c AS (SELECT date_trunc('month', signup_date) AS cohort, user_id FROM users) SELECT c.cohort, COUNT(DISTINCT c.user_id) AS cohort_size, COUNT(DISTINCT l.user_id) AS ever_active FROM c LEFT JOIN logins l ON l.user_id = c.user_id GROUP BY c.cohort ORDER BY c.cohort",
       "ordered": true,
-      "hints": ["Anchor each user to a cohort month first, then LEFT JOIN their logins.", "`COUNT(DISTINCT l.user_id)` counts activated users; the LEFT JOIN keeps cohorts whose users never logged in.", "Keep the join LEFT so cohort_size stays the full denominator."],
+      "hints": [
+        "Anchor each user to a cohort month first, then LEFT JOIN their logins.",
+        "`COUNT(DISTINCT l.user_id)` counts activated users; the LEFT JOIN keeps cohorts whose users never logged in.",
+        "Keep the join LEFT so cohort_size stays the full denominator."
+      ],
       "explanation": "Cohort analysis anchors each user to a group, then measures a later behavior. The LEFT JOIN is essential: an INNER JOIN would drop never-active users and silently shrink cohort_size, inflating the activation rate — the retention denominator trap in its purest form."
     },
     {
@@ -442,12 +735,18 @@
       "title": "A/B conversion rate by variant",
       "difficulty": "Medium",
       "category": "Metric Debugging",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "experiments",
       "prompt": "For each `variant`, return the number of assigned users (`users`), the number who converted (`conversions`), and the conversion rate (`conv_rate`, rounded to 3 decimals). Order by `variant`.",
       "oracle": "SELECT a.variant, COUNT(*) AS users, COUNT(*) FILTER (WHERE o.converted) AS conversions, round(COUNT(*) FILTER (WHERE o.converted)::numeric / COUNT(*), 3) AS conv_rate FROM assignments a JOIN outcomes o ON o.user_id = a.user_id GROUP BY a.variant ORDER BY a.variant",
       "ordered": true,
-      "hints": ["`COUNT(*) FILTER (WHERE o.converted)` counts conversions in the same pass as the total.", "The denominator is all assigned users in the variant, not just converters.", "Cast to numeric before dividing."],
+      "hints": [
+        "`COUNT(*) FILTER (WHERE o.converted)` counts conversions in the same pass as the total.",
+        "The denominator is all assigned users in the variant, not just converters.",
+        "Cast to numeric before dividing."
+      ],
       "explanation": "The conversion-rate denominator is everyone assigned to the variant — the whole point of an A/B test is to divide by the exposed population. FILTER computes numerator and denominator in one scan, and the ::numeric cast avoids integer-division truncation."
     },
     {
@@ -456,12 +755,17 @@
       "title": "Revenue per user by variant",
       "difficulty": "Medium",
       "category": "Metric Debugging",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "experiments",
       "prompt": "For each `variant`, return average revenue per assigned user (`arpu`, rounded to 2 decimals) — counting users who did **not** convert as $0. Order by `variant`.",
       "oracle": "SELECT a.variant, round(AVG(o.revenue), 2) AS arpu FROM assignments a JOIN outcomes o ON o.user_id = a.user_id GROUP BY a.variant ORDER BY a.variant",
       "ordered": true,
-      "hints": ["Every assigned user has an outcome row with revenue (0 for non-converters), so a plain AVG over all of them is correct.", "Filtering to converted users would change the denominator and inflate ARPU."],
+      "hints": [
+        "Every assigned user has an outcome row with revenue (0 for non-converters), so a plain AVG over all of them is correct.",
+        "Filtering to converted users would change the denominator and inflate ARPU."
+      ],
       "explanation": "ARPU divides by all assigned users, so the zero-revenue non-converters must stay in the average. Restricting to `WHERE converted` would compute average revenue *per converter* — a different, often accidentally-reported metric.",
       "wrongExample": "SELECT a.variant, round(AVG(o.revenue), 2) AS arpu FROM assignments a JOIN outcomes o ON o.user_id = a.user_id WHERE o.converted GROUP BY a.variant ORDER BY a.variant"
     },
@@ -471,13 +775,1241 @@
       "title": "A/B conversion lift",
       "difficulty": "Hard",
       "category": "Metric Debugging",
-      "lists": ["signal"],
+      "lists": [
+        "signal"
+      ],
       "dataset": "experiments",
       "prompt": "Return a single value `lift`: treatment's conversion rate minus control's conversion rate, rounded to 3 decimals.",
       "oracle": "WITH r AS (SELECT a.variant, COUNT(*) FILTER (WHERE o.converted)::numeric / COUNT(*) AS cr FROM assignments a JOIN outcomes o ON o.user_id = a.user_id GROUP BY a.variant) SELECT round((SELECT cr FROM r WHERE variant = 'treatment') - (SELECT cr FROM r WHERE variant = 'control'), 3) AS lift",
       "ordered": false,
-      "hints": ["Compute each variant's conversion rate in a CTE.", "Then subtract the two named rates with scalar subqueries over that CTE."],
+      "hints": [
+        "Compute each variant's conversion rate in a CTE.",
+        "Then subtract the two named rates with scalar subqueries over that CTE."
+      ],
       "explanation": "Absolute lift is the difference of two conversion rates. Computing both rates once in a CTE and pulling each by name with scalar subqueries keeps the final expression readable — and makes it obvious you're comparing like with like."
+    },
+    {
+      "id": "fex-first-txn",
+      "num": 31,
+      "title": "Each user's first transaction",
+      "difficulty": "Medium",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "fintech",
+      "prompt": "For every user who has any transaction, return the details of their **earliest** transaction (by `created_at`). Show `user_id`, `txn_id`, `amount`, and `created_at`. If a user somehow had two transactions at the exact same timestamp, keep the smaller `txn_id`. Order by `user_id`.",
+      "oracle": "WITH firsts AS (SELECT user_id, MIN(created_at) AS first_at FROM transactions GROUP BY user_id) SELECT t.user_id, MIN(t.txn_id) AS txn_id, MIN(t.amount) AS amount, t.created_at FROM transactions t JOIN firsts f ON f.user_id = t.user_id AND f.first_at = t.created_at GROUP BY t.user_id, t.created_at ORDER BY t.user_id",
+      "ordered": true,
+      "hints": [
+        "First find each user's earliest timestamp with `MIN(created_at)` grouped by `user_id`.",
+        "Join that back to `transactions` on both `user_id` and the matching timestamp to recover the row's details.",
+        "A tie on the same timestamp is broken by taking `MIN(txn_id)`."
+      ],
+      "explanation": "The 'earliest row per group with its details' pattern: a scalar aggregate (MIN timestamp) can't carry the other columns along, so you compute the key in a CTE and join back to fetch the full row. Note all transactions count here — not just approved — because the question is about the first touch of any kind.",
+      "wrongExample": "SELECT user_id, MIN(txn_id), MIN(amount), MIN(created_at) FROM transactions GROUP BY user_id ORDER BY user_id"
+    },
+    {
+      "id": "fex-segment-approval-rate",
+      "num": 32,
+      "title": "Approval rate by segment",
+      "difficulty": "Medium",
+      "category": "Metric Debugging",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "fintech",
+      "prompt": "For each user `segment`, compute the **approval rate**: the fraction of that segment's transactions with status `'approved'`, out of **all** its transactions (approved, declined, and refunded). Return `segment` and `approval_rate` rounded to 3 decimals. Order by `approval_rate` descending, then `segment`.",
+      "oracle": "SELECT u.segment, ROUND(COUNT(*) FILTER (WHERE t.status = 'approved')::numeric / COUNT(*), 3) AS approval_rate FROM users u JOIN transactions t ON t.user_id = u.user_id GROUP BY u.segment ORDER BY approval_rate DESC, u.segment",
+      "ordered": true,
+      "hints": [
+        "Join `users` to `transactions` so each transaction carries its user's segment.",
+        "Numerator: `COUNT(*) FILTER (WHERE t.status = 'approved')`. Denominator: `COUNT(*)` over every transaction in the segment.",
+        "Cast the numerator to `numeric` before dividing, or integer division truncates it to 0."
+      ],
+      "explanation": "The denominator is every transaction in the segment — declines and refunds included — which is what makes it a true approval rate rather than a share of approved-only rows. FILTER counts the numerator in the same scan, and the ::numeric cast is what stops Postgres from truncating 4/5 to 0.",
+      "wrongExample": "SELECT u.segment, COUNT(*) FILTER (WHERE t.status = 'approved') / COUNT(*) AS approval_rate FROM users u JOIN transactions t ON t.user_id = u.user_id GROUP BY u.segment ORDER BY approval_rate DESC, u.segment"
+    },
+    {
+      "id": "fex-merchants-above-avg-rev",
+      "num": 33,
+      "title": "Merchants above average revenue",
+      "difficulty": "Medium",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "fintech",
+      "prompt": "Compute each merchant's total **approved** revenue, then return only the merchants whose revenue is **strictly greater than the average revenue across merchants**. Show `name` and `revenue`, ordered by `revenue` descending, then `name`. (Average over the per-merchant totals, not over raw transactions.)",
+      "oracle": "WITH mr AS (SELECT m.name, SUM(t.amount) AS revenue FROM merchants m JOIN transactions t ON t.merchant_id = m.merchant_id WHERE t.status = 'approved' GROUP BY m.name) SELECT name, revenue FROM mr WHERE revenue > (SELECT AVG(revenue) FROM mr) ORDER BY revenue DESC, name",
+      "ordered": true,
+      "hints": [
+        "Aggregate approved revenue per merchant in a CTE first.",
+        "Then compare each merchant's revenue against `(SELECT AVG(revenue) FROM <cte>)` — the average of the per-merchant totals.",
+        "Averaging the raw transaction amounts instead would answer a different question."
+      ],
+      "explanation": "This is 'above the group average' one level up: the benchmark is the mean of the per-merchant revenue totals, so you must aggregate first (CTE) and only then take AVG over those totals. Taking AVG(amount) over raw transactions would weight by transaction count, not by merchant, and give the wrong bar.",
+      "wrongExample": "WITH mr AS (SELECT m.name, SUM(t.amount) AS revenue FROM merchants m JOIN transactions t ON t.merchant_id = m.merchant_id GROUP BY m.name) SELECT name, revenue FROM mr WHERE revenue > (SELECT AVG(revenue) FROM mr) ORDER BY revenue DESC, name"
+    },
+    {
+      "id": "fex-unresolved-disputes-by-reason",
+      "num": 34,
+      "title": "Unresolved disputes by reason",
+      "difficulty": "Easy",
+      "category": "Joins",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "fintech",
+      "prompt": "For each dispute `reason`, count how many disputes are still **unresolved** (`resolved = false`) and the total transaction `amount` at stake (`amount_at_risk` = sum of the disputed transactions' amounts). Only include reasons that have at least one unresolved dispute. Columns: `reason`, `unresolved`, `amount_at_risk`. Order by `amount_at_risk` descending, then `reason`.",
+      "oracle": "SELECT d.reason, COUNT(*) AS unresolved, SUM(t.amount) AS amount_at_risk FROM disputes d JOIN transactions t ON t.txn_id = d.txn_id WHERE d.resolved = false GROUP BY d.reason ORDER BY amount_at_risk DESC, d.reason",
+      "ordered": true,
+      "hints": [
+        "Join `disputes` to `transactions` on `txn_id` to reach each disputed transaction's amount.",
+        "Filter to `resolved = false` before grouping.",
+        "Group by `reason`, then COUNT the disputes and SUM the amounts."
+      ],
+      "explanation": "A straightforward join-filter-aggregate: the reason lives on `disputes`, the money lives on `transactions`, so you join to bring them together, keep only the open cases, and roll up per reason. `WHERE resolved = false` correctly drops the resolved rows before the counts are formed."
+    },
+    {
+      "id": "fex-spend-quartiles",
+      "num": 35,
+      "title": "Users by spend quartile",
+      "difficulty": "Hard",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "fintech",
+      "prompt": "Rank users into four quartiles by their total **approved** spend using `NTILE(4)` (quartile 1 = lowest spenders, 4 = highest). Only users with at least one approved transaction qualify. Return `user_id`, `total_approved`, and `quartile`. Order by `quartile`, then `total_approved` descending, then `user_id`.",
+      "oracle": "WITH spend AS (SELECT user_id, SUM(amount) AS total_approved FROM transactions WHERE status = 'approved' GROUP BY user_id) SELECT user_id, total_approved, NTILE(4) OVER (ORDER BY total_approved) AS quartile FROM spend ORDER BY quartile, total_approved DESC, user_id",
+      "ordered": true,
+      "hints": [
+        "Aggregate each user's approved spend in a CTE first.",
+        "`NTILE(4) OVER (ORDER BY total_approved)` splits the ordered users into four buckets — ascending order puts the lowest spenders in quartile 1.",
+        "NTILE distributes rows as evenly as possible; with 6 users the earlier buckets get the extra rows."
+      ],
+      "explanation": "NTILE(n) assigns each row to one of n contiguous buckets after ordering. Ordering ascending makes bucket 1 the lowest spenders. When the row count isn't divisible by n, NTILE gives the earlier buckets one extra row, so bucket sizes can differ by one — a detail worth knowing before you trust quartile cutoffs."
+    },
+    {
+      "id": "fex-revenue-share",
+      "num": 36,
+      "title": "Each user's share of revenue",
+      "difficulty": "Medium",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "fintech",
+      "prompt": "For each user with approved spend, return their total **approved** spend and their **share of total approved revenue** across all users (`pct_of_total`, rounded to 4 decimals). Columns: `user_id`, `total_approved`, `pct_of_total`. Order by `pct_of_total` descending, then `user_id`.",
+      "oracle": "WITH spend AS (SELECT user_id, SUM(amount) AS total_approved FROM transactions WHERE status = 'approved' GROUP BY user_id) SELECT user_id, total_approved, ROUND(total_approved / SUM(total_approved) OVER (), 4) AS pct_of_total FROM spend ORDER BY pct_of_total DESC, user_id",
+      "ordered": true,
+      "hints": [
+        "Aggregate approved spend per user in a CTE.",
+        "`SUM(total_approved) OVER ()` with an empty window computes the grand total on every row without collapsing them.",
+        "Divide each user's spend by that grand total, then round to 4 decimals."
+      ],
+      "explanation": "An empty OVER () window computes an aggregate over the whole result set while keeping every row — perfect for 'my value as a share of the total'. Because `total_approved` is already numeric, the division doesn't truncate; the windowed grand total avoids a second pass or a self-join.",
+      "wrongExample": "WITH spend AS (SELECT user_id, SUM(amount) AS total_approved FROM transactions WHERE status = 'approved' GROUP BY user_id) SELECT user_id, total_approved, ROUND(total_approved / (SELECT SUM(amount) FROM transactions), 4) AS pct_of_total FROM spend ORDER BY pct_of_total DESC, user_id"
+    },
+    {
+      "id": "fex-gap-between-approved",
+      "num": 37,
+      "title": "Days between approved transactions",
+      "difficulty": "Medium",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "fintech",
+      "prompt": "For each **approved** transaction, return `user_id`, `created_at`, and `days_since_prev` — the whole number of days since that user's **previous approved** transaction (NULL for their first). Order by `user_id`, then `created_at`.",
+      "oracle": "SELECT user_id, created_at, created_at::date - LAG(created_at) OVER (PARTITION BY user_id ORDER BY created_at)::date AS days_since_prev FROM transactions WHERE status = 'approved' ORDER BY user_id, created_at",
+      "ordered": true,
+      "hints": [
+        "`LAG(created_at) OVER (PARTITION BY user_id ORDER BY created_at)` fetches the user's previous approved transaction time.",
+        "Subtracting two timestamps yields an interval; cast both sides to `::date` so the result is a whole number of days.",
+        "The first transaction per user has no prior row, so LAG returns NULL."
+      ],
+      "explanation": "PARTITION BY user_id keeps each user's gap computation independent. The subtlety is the type: timestamp minus timestamp is an interval, not a day count — casting both operands to date gives the clean integer number of days that gap-between-events analysis (churn windows, cadence) actually wants."
+    },
+    {
+      "id": "fex-refund-rate-per-user",
+      "num": 38,
+      "title": "Refund rate per user",
+      "difficulty": "Medium",
+      "category": "Metric Debugging",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "fintech",
+      "prompt": "For each user, compute their **refund rate**: refunded transactions divided by **all** of that user's transactions (any status). Return `user_id` and `refund_rate` rounded to 3 decimals, for every user who has any transaction. Order by `refund_rate` descending, then `user_id`.",
+      "oracle": "SELECT user_id, ROUND(COUNT(*) FILTER (WHERE status = 'refunded')::numeric / COUNT(*), 3) AS refund_rate FROM transactions GROUP BY user_id ORDER BY refund_rate DESC, user_id",
+      "ordered": true,
+      "hints": [
+        "Numerator: `COUNT(*) FILTER (WHERE status = 'refunded')`. Denominator: `COUNT(*)` over all of the user's transactions.",
+        "Cast the numerator to `numeric` before dividing or the ratio truncates to 0.",
+        "No join is needed — every field lives on `transactions`."
+      ],
+      "explanation": "The refund-rate denominator is all of the user's transactions, so approved and declined rows stay in the count. FILTER isolates the refunded numerator in one pass, and the ::numeric cast is the classic integer-division guard — without it, 1/5 becomes 0 and most users would show a 0.000 refund rate.",
+      "wrongExample": "SELECT user_id, ROUND(COUNT(*) FILTER (WHERE status = 'refunded') / COUNT(*), 3) AS refund_rate FROM transactions GROUP BY user_id ORDER BY refund_rate DESC, user_id"
+    },
+    {
+      "id": "pex-power-users",
+      "num": 39,
+      "title": "Power users",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "product",
+      "prompt": "Return each `user_id` who has logged in **at least 3 times**, along with their login count as `logins`. Order by `logins` descending, then `user_id`.",
+      "oracle": "SELECT user_id, COUNT(*) AS logins FROM logins GROUP BY user_id HAVING COUNT(*) >= 3 ORDER BY logins DESC, user_id",
+      "ordered": true,
+      "hints": [
+        "Group logins by `user_id` and count the rows.",
+        "Filter the groups with `HAVING COUNT(*) >= 3` — WHERE can't see the aggregate.",
+        "Add `user_id` as a tie-breaker so equal counts sort deterministically."
+      ],
+      "explanation": "Power-user thresholds are a HAVING clause: you group first, then filter on the per-group count. WHERE runs before aggregation and so can't reference `COUNT(*)`. Users below the threshold (and users with zero logins, who never appear in `logins` at all) are correctly excluded.",
+      "wrongExample": "SELECT user_id, COUNT(*) AS logins FROM logins WHERE COUNT(*) >= 3 GROUP BY user_id ORDER BY logins DESC, user_id"
+    },
+    {
+      "id": "pex-signups-by-country",
+      "num": 40,
+      "title": "Signups by country",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "product",
+      "prompt": "How many users signed up from each `country`? Return `country` and `signups`, ordered by `signups` descending, then `country`.",
+      "oracle": "SELECT country, COUNT(*) AS signups FROM users GROUP BY country ORDER BY signups DESC, country",
+      "ordered": true,
+      "hints": [
+        "`GROUP BY country` then `COUNT(*)`.",
+        "Add `country` as a tie-breaker so countries with equal counts sort deterministically."
+      ],
+      "explanation": "A one-dimension GROUP BY: one row per country. The `country` tie-breaker matters because several countries can share the same signup count — without it, their relative order would be arbitrary."
+    },
+    {
+      "id": "pex-signup-to-first-login",
+      "num": 41,
+      "title": "Days from signup to first login",
+      "difficulty": "Medium",
+      "category": "Date/Time",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "product",
+      "prompt": "For each user who has logged in at least once, return `user_id` and `days_to_first_login` — the number of days between their `signup_date` and their **first** login. Order by `days_to_first_login` descending, then `user_id`.",
+      "oracle": "SELECT u.user_id, MIN(l.login_date) - u.signup_date AS days_to_first_login FROM users u JOIN logins l ON l.user_id = u.user_id GROUP BY u.user_id, u.signup_date ORDER BY days_to_first_login DESC, u.user_id",
+      "ordered": true,
+      "hints": [
+        "`MIN(login_date)` per user is their first login.",
+        "In Postgres, subtracting one date from another yields an integer number of days.",
+        "An inner JOIN drops users who never logged in, which is what we want here."
+      ],
+      "explanation": "Time-to-first-action is `MIN(login_date) - signup_date`, grouped per user. Subtracting two dates in Postgres returns whole days as an integer. The inner JOIN naturally excludes users with no logins, since they have no first-login date to measure against.",
+      "wrongExample": "SELECT u.user_id, MAX(l.login_date) - u.signup_date AS days_to_first_login FROM users u JOIN logins l ON l.user_id = u.user_id GROUP BY u.user_id, u.signup_date ORDER BY days_to_first_login DESC, u.user_id"
+    },
+    {
+      "id": "pex-funnel-dropoff",
+      "num": 42,
+      "title": "Funnel step-to-step drop-off",
+      "difficulty": "Hard",
+      "category": "Cohort & Funnel",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "product",
+      "prompt": "Walk the funnel in order (`visited` → `signed_up` → `activated` → `paid`). For each step return `step`, its distinct-user count `users`, and `pct_of_prev` — the share retained from the **immediately previous** step (rounded to 3 decimals; NULL for `visited`). Order the output by the funnel order.",
+      "oracle": "WITH ord AS (SELECT * FROM (VALUES ('visited',1),('signed_up',2),('activated',3),('paid',4)) AS t(step, ord)), c AS (SELECT f.step, COUNT(DISTINCT f.user_id) AS users, o.ord FROM funnel f JOIN ord o ON o.step = f.step GROUP BY f.step, o.ord) SELECT step, users, round(users::numeric / LAG(users) OVER (ORDER BY ord), 3) AS pct_of_prev FROM c ORDER BY ord",
+      "ordered": true,
+      "hints": [
+        "The funnel order isn't alphabetical, so anchor each step to an explicit order with a `VALUES` table.",
+        "Count distinct users per step in a CTE, carrying the order column through.",
+        "`LAG(users) OVER (ORDER BY ord)` fetches the previous step's count; divide the current count by it (cast to numeric)."
+      ],
+      "explanation": "Step-to-step retention needs the steps in funnel order, but `'visited' < 'signed_up'` isn't the funnel order alphabetically — so we pin the order with a small VALUES table. Counting distinct users per step and dividing each by the previous step (via LAG) gives the drop-off. The first step has no predecessor, so LAG yields NULL and `pct_of_prev` is NULL.",
+      "wrongExample": "WITH c AS (SELECT f.step, COUNT(DISTINCT f.user_id) AS users FROM funnel f GROUP BY f.step) SELECT step, users, round(users::numeric / LAG(users) OVER (ORDER BY step), 3) AS pct_of_prev FROM c ORDER BY step"
+    },
+    {
+      "id": "pex-w0-activation",
+      "num": 43,
+      "title": "First-month activation by cohort",
+      "difficulty": "Hard",
+      "category": "Cohort & Funnel",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "product",
+      "prompt": "Group users into cohorts by signup month. For each `cohort` month, return `cohort_size` (users who signed up that month) and `w0_active` (how many of them logged in **during their signup month**). Order by `cohort`.",
+      "oracle": "WITH c AS (SELECT user_id, date_trunc('month', signup_date) AS cohort FROM users) SELECT c.cohort, COUNT(DISTINCT c.user_id) AS cohort_size, COUNT(DISTINCT l.user_id) AS w0_active FROM c LEFT JOIN logins l ON l.user_id = c.user_id AND date_trunc('month', l.login_date) = c.cohort GROUP BY c.cohort ORDER BY c.cohort",
+      "ordered": true,
+      "hints": [
+        "Anchor each user to their signup-month cohort in a CTE.",
+        "LEFT JOIN logins, but restrict the join to logins whose month equals the cohort month (`date_trunc('month', login_date) = cohort`).",
+        "`COUNT(DISTINCT l.user_id)` counts first-month-active users; keep the join LEFT so `cohort_size` stays the full denominator."
+      ],
+      "explanation": "W0 activation asks whether a user acted within their own signup month. Putting `date_trunc('month', login_date) = cohort` in the ON clause (not WHERE) filters the logins while still keeping every cohort member for the `cohort_size` count. Moving that condition to WHERE would drop users with no first-month login and shrink the denominator — the classic cohort denominator trap.",
+      "wrongExample": "WITH c AS (SELECT user_id, date_trunc('month', signup_date) AS cohort FROM users) SELECT c.cohort, COUNT(DISTINCT c.user_id) AS cohort_size, COUNT(DISTINCT l.user_id) AS w0_active FROM c LEFT JOIN logins l ON l.user_id = c.user_id WHERE date_trunc('month', l.login_date) = c.cohort GROUP BY c.cohort ORDER BY c.cohort"
+    },
+    {
+      "id": "pex-paid-plan-mau",
+      "num": 44,
+      "title": "Paid-plan monthly active users",
+      "difficulty": "Medium",
+      "category": "Cohort & Funnel",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "product",
+      "prompt": "Considering only users on a **paid plan** (`pro` or `enterprise`), how many distinct such users logged in each month? Return `mon` (month via `date_trunc` on `login_date`) and `paid_mau`. Order by `mon`.",
+      "oracle": "SELECT date_trunc('month', l.login_date) AS mon, COUNT(DISTINCT l.user_id) AS paid_mau FROM logins l JOIN users u ON u.user_id = l.user_id WHERE u.plan IN ('pro','enterprise') GROUP BY 1 ORDER BY mon",
+      "ordered": true,
+      "hints": [
+        "Join logins to users so you can filter on `plan`.",
+        "Filter to paid plans with `plan IN ('pro','enterprise')`.",
+        "Bucket by month with `date_trunc('month', login_date)` and count DISTINCT users."
+      ],
+      "explanation": "Paid MAU restricts the active-user count to a plan segment: join logins to users, filter to the paid plans, then count distinct users per month. Counting DISTINCT matters because a user can log in many times a month — you want the user, not the login, counted once."
+    },
+    {
+      "id": "xex-users-per-variant",
+      "num": 45,
+      "title": "Users assigned per variant",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "experiments",
+      "prompt": "How many users are assigned to each `variant`? Return `variant` and `users`, ordered by `variant`.",
+      "oracle": "SELECT variant, COUNT(*) AS users FROM assignments GROUP BY variant ORDER BY variant",
+      "ordered": true,
+      "hints": [
+        "`GROUP BY variant` then `COUNT(*)`.",
+        "This is the balance check you run before trusting any A/B result — the two arms should be sized as designed."
+      ],
+      "explanation": "The simplest GROUP BY shape, but it's the first thing you check in an experiment: are the arms balanced? Counting rows in `assignments` (not `outcomes`) counts everyone exposed, converted or not."
+    },
+    {
+      "id": "xex-converters-per-variant",
+      "num": 46,
+      "title": "Converters per variant",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "experiments",
+      "prompt": "For each `variant`, how many assigned users actually converted? Return `variant` and `conversions` (count of converted users only), ordered by `variant`.",
+      "oracle": "SELECT a.variant, COUNT(*) FILTER (WHERE o.converted) AS conversions FROM assignments a JOIN outcomes o ON o.user_id = a.user_id GROUP BY a.variant ORDER BY a.variant",
+      "ordered": true,
+      "hints": [
+        "`COUNT(*) FILTER (WHERE o.converted)` counts only the rows where `converted` is true.",
+        "Because `converted` is already a boolean, you can filter on it directly — no `= true` needed.",
+        "Alternatively, `WHERE o.converted` before the GROUP BY gives the same counts here."
+      ],
+      "explanation": "The numerator of any conversion metric: how many exposed users converted, per arm. `FILTER (WHERE o.converted)` is the clean Postgres way to conditionally count in one pass. Since `converted` is boolean, it stands on its own as the predicate."
+    },
+    {
+      "id": "xex-revenue-per-variant",
+      "num": 47,
+      "title": "Total revenue per variant",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "experiments",
+      "prompt": "For each `variant`, return the total `revenue` generated (`total_revenue`) across all assigned users. Order by `variant`.",
+      "oracle": "SELECT a.variant, SUM(o.revenue) AS total_revenue FROM assignments a JOIN outcomes o ON o.user_id = a.user_id GROUP BY a.variant ORDER BY a.variant",
+      "ordered": true,
+      "hints": [
+        "Join `assignments` to `outcomes`, then `SUM(o.revenue)` grouped by variant.",
+        "Non-converters contribute 0, so they don't change the sum — but keeping them in makes the join correct."
+      ],
+      "explanation": "Total revenue per arm is the raw top-line an experiment moves. Summing over the joined set is safe here because non-converters carry revenue 0; the SUM is unaffected by their presence, but the join keeps the denominator honest for any per-user metric derived from the same query shape."
+    },
+    {
+      "id": "xex-rev-per-converter",
+      "num": 48,
+      "title": "Revenue per converter by variant",
+      "difficulty": "Medium",
+      "category": "Metric Debugging",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "experiments",
+      "prompt": "For each `variant`, return the average revenue **per converting user** (`rev_per_converter`, rounded to 2 decimals) — averaging revenue over only the users who converted, not all assigned users. Order by `variant`.",
+      "oracle": "SELECT a.variant, round(AVG(o.revenue) FILTER (WHERE o.converted), 2) AS rev_per_converter FROM assignments a JOIN outcomes o ON o.user_id = a.user_id GROUP BY a.variant ORDER BY a.variant",
+      "ordered": true,
+      "hints": [
+        "`AVG(o.revenue) FILTER (WHERE o.converted)` averages only over converters — the FILTER changes the denominator.",
+        "This is NOT ARPU: ARPU divides by all assigned users (including $0 non-converters); this divides by converters only.",
+        "Round with `round(x::numeric, 2)` semantics — `AVG` on numeric already returns numeric here."
+      ],
+      "explanation": "Revenue per converter isolates spend among people who actually bought, so the denominator must exclude non-converters. The FILTER clause shrinks the averaging set to converted rows only. Contrast with ARPU (revenue per assigned user): dividing the same revenue by all assigned users answers a different question and gives a smaller number.",
+      "wrongExample": "SELECT a.variant, round(AVG(o.revenue), 2) AS rev_per_converter FROM assignments a JOIN outcomes o ON o.user_id = a.user_id GROUP BY a.variant ORDER BY a.variant"
+    },
+    {
+      "id": "xex-pooled-conv-rate",
+      "num": 49,
+      "title": "Pooled overall conversion rate",
+      "difficulty": "Medium",
+      "category": "Metric Debugging",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "experiments",
+      "prompt": "Ignoring the variant split, what is the overall conversion rate across **every** assigned user? Return a single value `pooled_rate` (converters divided by all assigned users, rounded to 3 decimals).",
+      "oracle": "SELECT round(COUNT(*) FILTER (WHERE o.converted)::numeric / COUNT(*), 3) AS pooled_rate FROM assignments a JOIN outcomes o ON o.user_id = a.user_id",
+      "ordered": false,
+      "hints": [
+        "No GROUP BY — you want one number over the whole experiment.",
+        "`COUNT(*) FILTER (WHERE o.converted)` is the numerator; `COUNT(*)` (all assigned) is the denominator.",
+        "Cast the numerator to `numeric` or the integer division truncates to 0."
+      ],
+      "explanation": "The pooled rate collapses both arms into one baseline conversion figure — useful as a sanity check and as the blended number a naive report might quote. The ::numeric cast is essential: without it, integer / integer truncates toward zero and a 0.5 rate would report as 0.",
+      "wrongExample": "SELECT round(COUNT(*) FILTER (WHERE o.converted) / COUNT(*), 3) AS pooled_rate FROM assignments a JOIN outcomes o ON o.user_id = a.user_id"
+    },
+    {
+      "id": "ec-completed-orders",
+      "num": 50,
+      "title": "Completed orders",
+      "difficulty": "Easy",
+      "category": "Filtering & Sorting",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Return every order whose `status` is `'completed'`. Output columns: `order_id`, `customer_id`, `order_date`. Order the rows by `order_id` ascending.",
+      "oracle": "SELECT order_id, customer_id, order_date FROM orders WHERE status = 'completed' ORDER BY order_id",
+      "ordered": true,
+      "hints": [
+        "Filter with WHERE status = 'completed'.",
+        "Cancelled and returned orders must be excluded.",
+        "ORDER BY order_id."
+      ],
+      "explanation": "Most e-commerce metrics count only completed orders; cancelled and returned orders are traps that must be filtered out.",
+      "wrongExample": "SELECT order_id, customer_id, order_date FROM orders WHERE status <> 'cancelled' ORDER BY order_id"
+    },
+    {
+      "id": "ec-customers-per-country",
+      "num": 51,
+      "title": "Customers per country",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Count how many customers signed up from each country. Output columns: `country`, `customer_count`. Order by `customer_count` descending, then `country` ascending.",
+      "oracle": "SELECT country, COUNT(*) AS customer_count FROM customers GROUP BY country ORDER BY customer_count DESC, country",
+      "ordered": true,
+      "hints": [
+        "GROUP BY country.",
+        "COUNT(*) counts rows in each group.",
+        "Tie-break on country so the order is total."
+      ],
+      "explanation": "A basic GROUP BY count, with a tie-breaker column to make the ordering deterministic."
+    },
+    {
+      "id": "ec-join-orders-customers",
+      "num": 52,
+      "title": "Orders with customer names",
+      "difficulty": "Easy",
+      "category": "Joins",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "List every order together with the name of the customer who placed it. Output columns: `order_id`, `name` (the customer's name), `status`. Order by `order_id` ascending.",
+      "oracle": "SELECT o.order_id, c.name, o.status FROM orders o JOIN customers c ON c.customer_id = o.customer_id ORDER BY o.order_id",
+      "ordered": true,
+      "hints": [
+        "JOIN orders to customers on customer_id.",
+        "Every order has a valid customer_id, so an inner join is fine.",
+        "ORDER BY order_id."
+      ],
+      "explanation": "An inner join links each order to its customer via the customer_id foreign key."
+    },
+    {
+      "id": "ec-order-line-total",
+      "num": 53,
+      "title": "Order line totals",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "For every order that has line items, compute the order value = SUM(quantity * unit_price) across its items. Output columns: `order_id`, `order_value`. Order by `order_id` ascending. (Include all orders that appear in order_items, regardless of status.)",
+      "oracle": "SELECT order_id, SUM(quantity * unit_price) AS order_value FROM order_items GROUP BY order_id ORDER BY order_id",
+      "ordered": true,
+      "hints": [
+        "Order value = SUM(quantity * unit_price).",
+        "GROUP BY order_id.",
+        "You only need the order_items table here."
+      ],
+      "explanation": "The value of an order is the sum of quantity times unit_price over its line items."
+    },
+    {
+      "id": "ec-products-in-category",
+      "num": 54,
+      "title": "Products in a category",
+      "difficulty": "Easy",
+      "category": "Filtering & Sorting",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Return all products in the `'electronics'` category. Output columns: `product_id`, `name`, `price`. Order by `price` descending, then `product_id` ascending.",
+      "oracle": "SELECT product_id, name, price FROM products WHERE category = 'electronics' ORDER BY price DESC, product_id",
+      "ordered": true,
+      "hints": [
+        "Filter category = 'electronics'.",
+        "ORDER BY price DESC.",
+        "Add product_id as a tie-breaker."
+      ],
+      "explanation": "A simple filter and sort; the product_id tie-breaker guarantees a stable, total order."
+    },
+    {
+      "id": "ec-orders-per-status",
+      "num": 55,
+      "title": "Orders per status",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Count how many orders exist for each `status` value. Output columns: `status`, `order_count`. Order by `order_count` descending, then `status` ascending.",
+      "oracle": "SELECT status, COUNT(*) AS order_count FROM orders GROUP BY status ORDER BY order_count DESC, status",
+      "ordered": true,
+      "hints": [
+        "GROUP BY status.",
+        "COUNT(*) per group.",
+        "Tie-break on status."
+      ],
+      "explanation": "Grouping by status shows the mix of completed vs cancelled vs returned orders."
+    },
+    {
+      "id": "ec-aov-completed",
+      "num": 56,
+      "title": "Average order value (completed)",
+      "difficulty": "Medium",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Compute the overall Average Order Value across **completed** orders only. AOV = (average of per-order values), where each order's value = SUM(quantity * unit_price). Output a single column `aov` rounded to 2 decimals. First compute each completed order's value, then average those per-order values.",
+      "oracle": "SELECT ROUND(AVG(order_value)::numeric, 2) AS aov FROM (SELECT oi.order_id, SUM(oi.quantity * oi.unit_price) AS order_value FROM order_items oi JOIN orders o ON o.order_id = oi.order_id WHERE o.status = 'completed' GROUP BY oi.order_id) t",
+      "ordered": false,
+      "hints": [
+        "First build per-order totals for completed orders.",
+        "Then AVG those totals — do not average the raw line items.",
+        "ROUND(x::numeric, 2)."
+      ],
+      "explanation": "AOV averages per-order totals, not per-line-item amounts; averaging line items would weight orders by their number of items.",
+      "wrongExample": "SELECT ROUND(AVG(oi.quantity * oi.unit_price)::numeric, 2) AS aov FROM order_items oi JOIN orders o ON o.order_id = oi.order_id WHERE o.status = 'completed'"
+    },
+    {
+      "id": "ec-never-ordered",
+      "num": 57,
+      "title": "Customers with no completed orders",
+      "difficulty": "Medium",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Find customers who have **never had a completed order** — they may have cancelled or returned orders, but zero completed ones. Output columns: `customer_id`, `name`. Order by `customer_id` ascending.",
+      "oracle": "SELECT c.customer_id, c.name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id AND o.status = 'completed') ORDER BY c.customer_id",
+      "ordered": true,
+      "hints": [
+        "Use NOT EXISTS with a correlated subquery filtered to status = 'completed'.",
+        "A customer with only cancelled/returned orders still qualifies.",
+        "ORDER BY customer_id."
+      ],
+      "explanation": "The status filter belongs inside the NOT EXISTS subquery so a customer counts as 'no completed orders' even if they have cancelled or returned ones.",
+      "wrongExample": "SELECT c.customer_id, c.name FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id) ORDER BY c.customer_id"
+    },
+    {
+      "id": "ec-order-count-incl-zero",
+      "num": 58,
+      "title": "Completed orders per customer (including zero)",
+      "difficulty": "Medium",
+      "category": "Joins",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "For **every** customer, count their number of **completed** orders, including customers with zero completed orders (they must still appear with a count of 0). Put the status condition in the LEFT JOIN's ON clause so customers with only cancelled/returned orders keep a 0 (do not filter status in WHERE — that would drop them). Output columns: `customer_id`, `name`, `completed_orders`. Order by `completed_orders` descending, then `customer_id` ascending.",
+      "oracle": "SELECT c.customer_id, c.name, COUNT(o.order_id) AS completed_orders FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id AND o.status = 'completed' GROUP BY c.customer_id, c.name ORDER BY completed_orders DESC, c.customer_id",
+      "ordered": true,
+      "hints": [
+        "LEFT JOIN customers to orders with the status = 'completed' condition in the ON clause.",
+        "COUNT(o.order_id) yields 0 for customers with no matching completed order.",
+        "Putting status in WHERE instead of ON would filter out zero-completed customers entirely."
+      ],
+      "explanation": "In a LEFT JOIN, a WHERE filter on the right table turns it into an inner join and drops unmatched customers; keeping the status condition in ON preserves them with a count of 0.",
+      "wrongExample": "SELECT c.customer_id, c.name, COUNT(o.order_id) AS completed_orders FROM customers c LEFT JOIN orders o ON o.customer_id = c.customer_id WHERE o.status = 'completed' GROUP BY c.customer_id, c.name ORDER BY completed_orders DESC, c.customer_id"
+    },
+    {
+      "id": "ec-products-never-ordered",
+      "num": 59,
+      "title": "Products never cancelled or returned",
+      "difficulty": "Medium",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Find products that have **never** appeared in any order whose status is `'cancelled'` or `'returned'`. (Every product has been sold at least once; you want the ones that were never part of a cancelled or returned order.) Output columns: `product_id`, `name`, `category`. Order by `product_id` ascending.",
+      "oracle": "SELECT p.product_id, p.name, p.category FROM products p WHERE NOT EXISTS (SELECT 1 FROM order_items oi JOIN orders o ON o.order_id = oi.order_id WHERE oi.product_id = p.product_id AND o.status IN ('cancelled','returned')) ORDER BY p.product_id",
+      "ordered": true,
+      "hints": [
+        "Anti-join products against order_items joined to orders.",
+        "The subquery filters status IN ('cancelled','returned').",
+        "NOT EXISTS returns products with no such matching row."
+      ],
+      "explanation": "A NOT EXISTS anti-join over the cancelled/returned line items surfaces products that never ended up in a bad order."
+    },
+    {
+      "id": "ec-revenue-per-category",
+      "num": 60,
+      "title": "Revenue per category (completed)",
+      "difficulty": "Medium",
+      "category": "Joins",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Compute total revenue per product category, counting **completed orders only**. Revenue of a line = quantity * unit_price. Output columns: `category`, `revenue`. Order by `revenue` descending, then `category` ascending.",
+      "oracle": "SELECT p.category, SUM(oi.quantity * oi.unit_price) AS revenue FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id WHERE o.status = 'completed' GROUP BY p.category ORDER BY revenue DESC, p.category",
+      "ordered": true,
+      "hints": [
+        "Join order_items to orders (for status) and to products (for category).",
+        "Filter status = 'completed'.",
+        "SUM(quantity * unit_price) grouped by category."
+      ],
+      "explanation": "Joining line items to both orders and products lets you attribute completed revenue to each category."
+    },
+    {
+      "id": "ec-price-tier",
+      "num": 61,
+      "title": "Product price tiers",
+      "difficulty": "Easy",
+      "category": "Conditional Logic",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Label each product by price tier using a CASE expression: `'cheap'` when `price < 10`, `'mid'` when `price >= 10 AND price < 40`, and `'premium'` when `price >= 40`. Output columns: `product_id`, `name`, `price`, `tier`. Order by `product_id` ascending.",
+      "oracle": "SELECT product_id, name, price, CASE WHEN price < 10 THEN 'cheap' WHEN price < 40 THEN 'mid' ELSE 'premium' END AS tier FROM products ORDER BY product_id",
+      "ordered": true,
+      "hints": [
+        "CASE WHEN ... THEN ... ELSE ... END.",
+        "Order the WHEN branches so ranges don't overlap.",
+        "ORDER BY product_id."
+      ],
+      "explanation": "CASE evaluates branches top-to-bottom, so a simple ascending threshold order implements the tiers cleanly."
+    },
+    {
+      "id": "ec-revenue-per-product-rank",
+      "num": 62,
+      "title": "Rank products by revenue",
+      "difficulty": "Medium",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Rank products by total **completed** revenue (SUM(quantity * unit_price)) using `RANK()` (highest revenue = rank 1; ties share a rank). Only include products that have at least one completed sale. Output columns: `name`, `revenue`, `rnk`. Order by `rnk` ascending, then `name` ascending.",
+      "oracle": "SELECT name, revenue, RANK() OVER (ORDER BY revenue DESC) AS rnk FROM (SELECT p.name, SUM(oi.quantity * oi.unit_price) AS revenue FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id WHERE o.status = 'completed' GROUP BY p.name) t ORDER BY rnk, name",
+      "ordered": true,
+      "hints": [
+        "First aggregate completed revenue per product in a subquery.",
+        "RANK() OVER (ORDER BY revenue DESC).",
+        "Order the final output by rnk then name."
+      ],
+      "explanation": "Aggregate first, then apply RANK over the per-product totals; RANK lets tied revenues share a rank."
+    },
+    {
+      "id": "ec-top-product-per-category",
+      "num": 63,
+      "title": "Top-selling product per category",
+      "difficulty": "Hard",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "For each product category, find the single product with the highest **completed** revenue. Break ties by `name` ascending (pick the alphabetically-first name). Use `ROW_NUMBER()` partitioned by category. Output columns: `category`, `name`, `revenue`. Order by `category` ascending.",
+      "oracle": "SELECT category, name, revenue FROM (SELECT p.category, p.name, SUM(oi.quantity * oi.unit_price) AS revenue, ROW_NUMBER() OVER (PARTITION BY p.category ORDER BY SUM(oi.quantity * oi.unit_price) DESC, p.name) AS rn FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id WHERE o.status = 'completed' GROUP BY p.category, p.name) t WHERE rn = 1 ORDER BY category",
+      "ordered": true,
+      "hints": [
+        "Aggregate completed revenue per (category, product).",
+        "ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC, name).",
+        "Keep rows where rn = 1."
+      ],
+      "explanation": "ROW_NUMBER with a tie-breaker guarantees exactly one winner per category; and the completed-only filter matters because cancelled/returned line items would otherwise inflate the revenue.",
+      "wrongExample": "SELECT category, name, revenue FROM (SELECT p.category, p.name, SUM(oi.quantity * oi.unit_price) AS revenue, ROW_NUMBER() OVER (PARTITION BY p.category ORDER BY SUM(oi.quantity * oi.unit_price) DESC, p.name) AS rn FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id GROUP BY p.category, p.name) t WHERE rn = 1 ORDER BY category"
+    },
+    {
+      "id": "ec-running-spend",
+      "num": 64,
+      "title": "Running total of a customer's spend",
+      "difficulty": "Hard",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "For customer_id = 1, list each of their **completed** orders with a running (cumulative) total of order value ordered by `order_date`. Each order's value = SUM(quantity * unit_price). Output columns: `order_id`, `order_date`, `order_value`, `running_total`. The running_total on each row is the sum of order_value for all of that customer's completed orders up to and including that order_date. Order by `order_date` ascending, then `order_id` ascending.",
+      "oracle": "SELECT order_id, order_date, order_value, SUM(order_value) OVER (ORDER BY order_date, order_id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_total FROM (SELECT o.order_id, o.order_date, SUM(oi.quantity * oi.unit_price) AS order_value FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'completed' AND o.customer_id = 1 GROUP BY o.order_id, o.order_date) t ORDER BY order_date, order_id",
+      "ordered": true,
+      "hints": [
+        "Build per-order totals for customer 1's completed orders.",
+        "SUM(order_value) OVER (ORDER BY order_date, order_id) gives the running total.",
+        "Add order_id to the window ORDER BY to break same-date ties deterministically."
+      ],
+      "explanation": "A cumulative SUM window function ordered by date produces a running total; a secondary sort key makes it deterministic on tied dates."
+    },
+    {
+      "id": "ec-mom-revenue",
+      "num": 65,
+      "title": "Month-over-month completed revenue",
+      "difficulty": "Hard",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Compute total **completed** revenue per month, plus the previous month's revenue using `LAG()`. Revenue of a line = quantity * unit_price; bucket months with `date_trunc('month', order_date)`. For the earliest month, prev_revenue is NULL. Output columns: `month`, `revenue`, `prev_revenue`. Order by `month` ascending.",
+      "oracle": "SELECT month, revenue, LAG(revenue) OVER (ORDER BY month) AS prev_revenue FROM (SELECT date_trunc('month', o.order_date) AS month, SUM(oi.quantity * oi.unit_price) AS revenue FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'completed' GROUP BY date_trunc('month', o.order_date)) t ORDER BY month",
+      "ordered": true,
+      "hints": [
+        "Aggregate completed revenue per month first.",
+        "LAG(revenue) OVER (ORDER BY month) fetches the prior month's value.",
+        "The first month naturally gets NULL."
+      ],
+      "explanation": "LAG reads the previous row's value in month order, giving the prior period for month-over-month comparisons."
+    },
+    {
+      "id": "ec-second-highest-order",
+      "num": 66,
+      "title": "Second-highest order value",
+      "difficulty": "Medium",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Among **completed** orders, find the order with the second-highest order value (order value = SUM(quantity * unit_price)). Assume distinct values at the top so there is a unique 2nd place. Output columns: `order_id`, `order_value`. Return exactly one row.",
+      "oracle": "SELECT order_id, order_value FROM (SELECT o.order_id, SUM(oi.quantity * oi.unit_price) AS order_value FROM orders o JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'completed' GROUP BY o.order_id ORDER BY SUM(oi.quantity * oi.unit_price) DESC, o.order_id LIMIT 1 OFFSET 1) t",
+      "ordered": false,
+      "hints": [
+        "Compute per-order totals for completed orders.",
+        "ORDER BY order_value DESC then OFFSET 1 LIMIT 1.",
+        "Or use DENSE_RANK and keep rank 2."
+      ],
+      "explanation": "Ordering completed-order totals descending and skipping one row (OFFSET 1) yields the runner-up."
+    },
+    {
+      "id": "ec-repeat-customers",
+      "num": 67,
+      "title": "Repeat customers",
+      "difficulty": "Medium",
+      "category": "Aggregation",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Find customers with **2 or more completed orders**. Output columns: `customer_id`, `name`, `completed_orders`. Order by `completed_orders` descending, then `customer_id` ascending.",
+      "oracle": "SELECT c.customer_id, c.name, COUNT(*) AS completed_orders FROM customers c JOIN orders o ON o.customer_id = c.customer_id WHERE o.status = 'completed' GROUP BY c.customer_id, c.name HAVING COUNT(*) >= 2 ORDER BY completed_orders DESC, c.customer_id",
+      "ordered": true,
+      "hints": [
+        "Filter status = 'completed' before grouping.",
+        "GROUP BY customer, then HAVING COUNT(*) >= 2.",
+        "Cancelled/returned orders must not inflate the count."
+      ],
+      "explanation": "HAVING filters groups after aggregation; filtering status in WHERE ensures only completed orders are counted toward the repeat threshold.",
+      "wrongExample": "SELECT c.customer_id, c.name, COUNT(*) AS completed_orders FROM customers c JOIN orders o ON o.customer_id = c.customer_id GROUP BY c.customer_id, c.name HAVING COUNT(*) >= 2 ORDER BY completed_orders DESC, c.customer_id"
+    },
+    {
+      "id": "ec-revenue-share",
+      "num": 68,
+      "title": "Each product's share of total revenue",
+      "difficulty": "Hard",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "For each product with completed sales, compute its total **completed** revenue and its share of overall completed revenue as a percentage, using a window `SUM(...) OVER ()` for the denominator. Output columns: `name`, `revenue`, `pct_of_total` (rounded to 2 decimals, e.g. 12.34 for 12.34%). Order by `revenue` descending, then `name` ascending.",
+      "oracle": "SELECT name, revenue, ROUND((revenue / SUM(revenue) OVER () * 100)::numeric, 2) AS pct_of_total FROM (SELECT p.name, SUM(oi.quantity * oi.unit_price) AS revenue FROM order_items oi JOIN orders o ON o.order_id = oi.order_id JOIN products p ON p.product_id = oi.product_id WHERE o.status = 'completed' GROUP BY p.name) t ORDER BY revenue DESC, name",
+      "ordered": true,
+      "hints": [
+        "Aggregate completed revenue per product first.",
+        "SUM(revenue) OVER () with an empty window is the grand total across all rows.",
+        "Cast to numeric before ROUND and multiply by 100 for a percentage."
+      ],
+      "explanation": "An empty OVER () window computes the grand total alongside each row, so you can divide each product's revenue by the whole without a separate subquery."
+    },
+    {
+      "id": "ec-market-basket-headphones",
+      "num": 69,
+      "title": "Bought with Headphones",
+      "difficulty": "Hard",
+      "category": "Joins",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Find products that were purchased in the same order as `'Headphones'` (any order status). Exclude Headphones itself. Count in how many distinct orders each such product co-occurred with Headphones. Output columns: `name`, `orders_together`. Order by `orders_together` descending, then `name` ascending.",
+      "oracle": "SELECT p.name, COUNT(DISTINCT oi2.order_id) AS orders_together FROM order_items oi1 JOIN order_items oi2 ON oi2.order_id = oi1.order_id AND oi2.product_id <> oi1.product_id JOIN products hp ON hp.product_id = oi1.product_id AND hp.name = 'Headphones' JOIN products p ON p.product_id = oi2.product_id GROUP BY p.name ORDER BY orders_together DESC, p.name",
+      "ordered": true,
+      "hints": [
+        "Self-join order_items on order_id to pair items in the same order.",
+        "Anchor one side to the Headphones product and exclude the same product on the other side.",
+        "COUNT(DISTINCT order_id) of the co-purchased product."
+      ],
+      "explanation": "A self-join of order_items on order_id pairs co-purchased items; anchoring one side to Headphones yields its market-basket companions."
+    },
+    {
+      "id": "ec-return-rate-by-month",
+      "num": 70,
+      "title": "Returned-order rate by month",
+      "difficulty": "Hard",
+      "category": "Metric Debugging",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "For each month (bucketed by `date_trunc('month', order_date)`), compute the returned-order rate = (number of orders with status `'returned'`) / (total orders that month), as a fraction rounded to 4 decimals. Watch the integer-division trap: cast before dividing. Output columns: `month`, `total_orders`, `returned_orders`, `return_rate`. Order by `month` ascending.",
+      "oracle": "SELECT date_trunc('month', order_date) AS month, COUNT(*) AS total_orders, COUNT(*) FILTER (WHERE status = 'returned') AS returned_orders, ROUND(COUNT(*) FILTER (WHERE status = 'returned')::numeric / COUNT(*), 4) AS return_rate FROM orders GROUP BY date_trunc('month', order_date) ORDER BY month",
+      "ordered": true,
+      "hints": [
+        "COUNT(*) FILTER (WHERE status = 'returned') gives the numerator.",
+        "Cast the numerator ::numeric before dividing, or the result truncates to 0.",
+        "GROUP BY the truncated month."
+      ],
+      "explanation": "Integer/integer truncates to 0 in Postgres; casting the numerator to numeric before dividing yields the true fractional rate.",
+      "wrongExample": "SELECT date_trunc('month', order_date) AS month, COUNT(*) AS total_orders, COUNT(*) FILTER (WHERE status = 'returned') AS returned_orders, ROUND(COUNT(*) FILTER (WHERE status = 'returned') / COUNT(*), 4) AS return_rate FROM orders GROUP BY date_trunc('month', order_date) ORDER BY month"
+    },
+    {
+      "id": "ec-cohort-revenue",
+      "num": 71,
+      "title": "Revenue by signup-month cohort",
+      "difficulty": "Hard",
+      "category": "Cohort & Funnel",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "ecommerce",
+      "prompt": "Group customers into cohorts by their signup month (`date_trunc('month', signup_date)`), and for each cohort compute the total **completed** revenue generated by its customers (revenue of a line = quantity * unit_price). Only include cohorts that generated revenue. Output columns: `cohort_month`, `revenue`. Order by `cohort_month` ascending.",
+      "oracle": "SELECT date_trunc('month', c.signup_date) AS cohort_month, SUM(oi.quantity * oi.unit_price) AS revenue FROM customers c JOIN orders o ON o.customer_id = c.customer_id JOIN order_items oi ON oi.order_id = o.order_id WHERE o.status = 'completed' GROUP BY date_trunc('month', c.signup_date) ORDER BY cohort_month",
+      "ordered": true,
+      "hints": [
+        "Bucket customers by date_trunc('month', signup_date).",
+        "Join through orders to order_items for completed revenue.",
+        "GROUP BY the signup cohort month."
+      ],
+      "explanation": "A signup-month cohort attributes each customer's completed revenue to the month they joined, revealing cohort value over time."
+    },
+    {
+      "id": "hr-emps-in-eng",
+      "num": 72,
+      "title": "Employees in Engineering",
+      "difficulty": "Easy",
+      "category": "Filtering & Sorting",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "List the names of every employee in the Engineering department (`dept_id` = 1). Return one column `name`, ordered alphabetically (A→Z).",
+      "oracle": "SELECT name FROM employees WHERE dept_id = 1 ORDER BY name",
+      "ordered": true,
+      "hints": [
+        "Engineering is `dept_id = 1`.",
+        "Use `WHERE` to filter, then `ORDER BY name`."
+      ],
+      "explanation": "A basic single-table filter: restrict rows with WHERE, then sort the surviving rows by name."
+    },
+    {
+      "id": "hr-salary-threshold",
+      "num": 73,
+      "title": "Well-paid employees",
+      "difficulty": "Easy",
+      "category": "Filtering & Sorting",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "List every employee earning strictly more than 130000. Return columns `name` and `salary`, ordered by `salary` descending, then `name` ascending as a tie-breaker.",
+      "oracle": "SELECT name, salary FROM employees WHERE salary > 130000 ORDER BY salary DESC, name",
+      "ordered": true,
+      "hints": [
+        "`salary > 130000` — strictly greater, so 130000 itself is excluded.",
+        "Add `name` as a secondary sort key to break salary ties deterministically."
+      ],
+      "explanation": "Filtering on a threshold plus a two-key sort so tied salaries have a stable, deterministic order.",
+      "wrongExample": "SELECT name, salary FROM employees WHERE salary >= 130000 ORDER BY salary DESC, name"
+    },
+    {
+      "id": "hr-join-dept-name",
+      "num": 74,
+      "title": "Employee with department name",
+      "difficulty": "Easy",
+      "category": "Joins",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "For every employee, show their `name` and the `department` name they belong to. Return columns `name` and `department`, ordered by `name` ascending.",
+      "oracle": "SELECT e.name, d.name AS department FROM employees e JOIN departments d ON d.dept_id = e.dept_id ORDER BY e.name",
+      "ordered": true,
+      "hints": [
+        "Join `employees` to `departments` on `dept_id`.",
+        "Alias `departments.name` as `department` to distinguish it from the employee name."
+      ],
+      "explanation": "A straight inner join on the foreign key dept_id, aliasing the two name columns so they are distinguishable."
+    },
+    {
+      "id": "hr-headcount-per-dept",
+      "num": 75,
+      "title": "Headcount per department",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "Count how many employees are in each department. Return columns `department` (the department name) and `headcount`, ordered by `headcount` descending, then `department` ascending.",
+      "oracle": "SELECT d.name AS department, COUNT(*) AS headcount FROM departments d JOIN employees e ON e.dept_id = d.dept_id GROUP BY d.name ORDER BY headcount DESC, department",
+      "ordered": true,
+      "hints": [
+        "`GROUP BY` the department, then `COUNT(*)` per group.",
+        "Break count ties with the department name so the order is deterministic."
+      ],
+      "explanation": "Grouping by department and counting rows per group; the secondary sort makes tied headcounts deterministic."
+    },
+    {
+      "id": "hr-avg-salary-per-dept",
+      "num": 76,
+      "title": "Average salary per department",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "Compute the average salary in each department. Return columns `department` (the department name) and `avg_salary`, with `avg_salary` rounded to 2 decimal places. Order by `avg_salary` descending, then `department` ascending.",
+      "oracle": "SELECT d.name AS department, ROUND(AVG(e.salary), 2) AS avg_salary FROM departments d JOIN employees e ON e.dept_id = d.dept_id GROUP BY d.name ORDER BY avg_salary DESC, department",
+      "ordered": true,
+      "hints": [
+        "`AVG(salary)` inside a `GROUP BY department`.",
+        "Wrap in `ROUND(..., 2)` so the average is comparable to two decimals."
+      ],
+      "explanation": "Per-group AVG with rounding to a fixed number of decimals so the ratio is deterministic and comparable."
+    },
+    {
+      "id": "hr-max-salary-per-dept",
+      "num": 77,
+      "title": "Top salary per department",
+      "difficulty": "Easy",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "Find the highest salary paid in each department. Return columns `department` (the department name) and `max_salary`, ordered by `max_salary` descending, then `department` ascending.",
+      "oracle": "SELECT d.name AS department, MAX(e.salary) AS max_salary FROM departments d JOIN employees e ON e.dept_id = d.dept_id GROUP BY d.name ORDER BY max_salary DESC, department",
+      "ordered": true,
+      "hints": [
+        "`MAX(salary)` grouped by department.",
+        "Order by the max, then department name to break ties."
+      ],
+      "explanation": "A per-group MAX aggregate; grouping collapses each department to a single row carrying its top salary."
+    },
+    {
+      "id": "hr-hired-2022",
+      "num": 78,
+      "title": "Hired in 2022",
+      "difficulty": "Easy",
+      "category": "Date/Time",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "List every employee hired during the calendar year 2022. Return columns `name` and `hire_date`, ordered by `hire_date` ascending, then `name` ascending.",
+      "oracle": "SELECT name, hire_date FROM employees WHERE EXTRACT(YEAR FROM hire_date) = 2022 ORDER BY hire_date, name",
+      "ordered": true,
+      "hints": [
+        "`EXTRACT(YEAR FROM hire_date) = 2022`, or a range `hire_date >= '2022-01-01' AND hire_date < '2023-01-01'`.",
+        "Sort by hire_date, then name to break same-day ties."
+      ],
+      "explanation": "Filtering a date column to a single year, either via EXTRACT or a half-open range."
+    },
+    {
+      "id": "hr-salary-band",
+      "num": 79,
+      "title": "Salary bands",
+      "difficulty": "Easy",
+      "category": "Conditional Logic",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "Classify each employee into a salary `band`: salaries under 100000 are 'junior', salaries from 100000 up to (but not including) 150000 are 'mid', and 150000 or above are 'senior'. Return columns `name`, `salary`, and `band`, ordered by `salary` ascending, then `name` ascending.",
+      "oracle": "SELECT name, salary, CASE WHEN salary < 100000 THEN 'junior' WHEN salary < 150000 THEN 'mid' ELSE 'senior' END AS band FROM employees ORDER BY salary, name",
+      "ordered": true,
+      "hints": [
+        "Use a `CASE` expression with cascading `WHEN` clauses.",
+        "Because CASE stops at the first true branch, order the thresholds from lowest to highest."
+      ],
+      "explanation": "A CASE expression evaluates branches top-to-bottom, so ordering thresholds ascending lets each later branch assume the earlier ones were false."
+    },
+    {
+      "id": "hr-depts-gt2",
+      "num": 80,
+      "title": "Departments with more than 2 employees",
+      "difficulty": "Medium",
+      "category": "Aggregation",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "List the departments that have more than 2 employees. Return columns `department` (the department name) and `headcount`, ordered by `headcount` descending, then `department` ascending.",
+      "oracle": "SELECT d.name AS department, COUNT(*) AS headcount FROM departments d JOIN employees e ON e.dept_id = d.dept_id GROUP BY d.name HAVING COUNT(*) > 2 ORDER BY headcount DESC, department",
+      "ordered": true,
+      "hints": [
+        "Filter groups with `HAVING COUNT(*) > 2`, not `WHERE`.",
+        "`WHERE` filters rows before grouping; `HAVING` filters after aggregation."
+      ],
+      "explanation": "HAVING applies to aggregated groups — the count only exists after GROUP BY, so it cannot be used in WHERE.",
+      "wrongExample": "SELECT d.name AS department, COUNT(*) AS headcount FROM departments d JOIN employees e ON e.dept_id = d.dept_id GROUP BY d.name HAVING COUNT(*) >= 2 ORDER BY headcount DESC, department"
+    },
+    {
+      "id": "hr-no-manager",
+      "num": 81,
+      "title": "Employees with no manager",
+      "difficulty": "Easy",
+      "category": "Filtering & Sorting",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "Find every employee who has no manager (their `manager_id` is NULL). Return one column `name`, ordered alphabetically.",
+      "oracle": "SELECT name FROM employees WHERE manager_id IS NULL ORDER BY name",
+      "ordered": true,
+      "hints": [
+        "Test for NULL with `IS NULL`, never `= NULL`.",
+        "In SQL, `manager_id = NULL` is never true — comparisons with NULL yield unknown."
+      ],
+      "explanation": "NULL is not a value you can compare with =; the IS NULL predicate is the only correct test for missing data.",
+      "wrongExample": "SELECT name FROM employees WHERE manager_id = NULL ORDER BY name"
+    },
+    {
+      "id": "hr-top5-paid",
+      "num": 82,
+      "title": "Top 5 highest paid",
+      "difficulty": "Easy",
+      "category": "Filtering & Sorting",
+      "lists": [
+        "foundations"
+      ],
+      "dataset": "hr",
+      "prompt": "List the 5 highest-paid employees. Return columns `name` and `salary`, ordered by `salary` descending, then `name` ascending, and return only the top 5 rows.",
+      "oracle": "SELECT name, salary FROM employees ORDER BY salary DESC, name LIMIT 5",
+      "ordered": true,
+      "hints": [
+        "`ORDER BY salary DESC` then `LIMIT 5`.",
+        "Add `name` as a tie-breaker so the 5th row is chosen deterministically when salaries tie."
+      ],
+      "explanation": "ORDER BY + LIMIT is the top-N idiom; a deterministic tie-breaker matters because Priya and Raj both earn 120000."
+    },
+    {
+      "id": "hr-2nd-highest-salary",
+      "num": 83,
+      "title": "Second-highest distinct salary",
+      "difficulty": "Medium",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "Return the second-highest **distinct** salary in the company as a single row, single column named `second_highest`.",
+      "oracle": "SELECT DISTINCT salary AS second_highest FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1",
+      "ordered": false,
+      "hints": [
+        "Deduplicate salaries first (`DISTINCT`), then skip the top one with `OFFSET 1`.",
+        "The answer is a salary that exists in the data — 160000."
+      ],
+      "explanation": "Ranking must be over distinct salary values; otherwise duplicate top salaries would push the 'second' row to still be the max.",
+      "wrongExample": "SELECT MAX(salary) AS second_highest FROM employees WHERE salary < (SELECT MAX(salary) FROM employees) AND salary < 160000"
+    },
+    {
+      "id": "hr-earn-more-than-manager",
+      "num": 84,
+      "title": "Out-earning your manager",
+      "difficulty": "Medium",
+      "category": "Joins",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "Find every employee who earns strictly more than their direct manager. Return columns `employee`, `emp_salary`, `manager`, and `mgr_salary`, ordered by `employee` ascending.",
+      "oracle": "SELECT e.name AS employee, e.salary AS emp_salary, m.name AS manager, m.salary AS mgr_salary FROM employees e JOIN employees m ON m.emp_id = e.manager_id WHERE e.salary > m.salary ORDER BY employee",
+      "ordered": true,
+      "hints": [
+        "Self-join `employees` to itself: one alias for the employee, one for the manager.",
+        "Join condition is `manager.emp_id = employee.manager_id`, then filter `emp.salary > mgr.salary`."
+      ],
+      "explanation": "A self-join links each employee row to their manager's row via manager_id → emp_id; direction of the join condition matters.",
+      "wrongExample": "SELECT e.name AS employee, e.salary AS emp_salary, m.name AS manager, m.salary AS mgr_salary FROM employees e JOIN employees m ON m.manager_id = e.emp_id WHERE e.salary > m.salary ORDER BY employee"
+    },
+    {
+      "id": "hr-rank-within-dept",
+      "num": 85,
+      "title": "Salary rank within department",
+      "difficulty": "Medium",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "Rank employees by salary **within** their department using dense ranking (highest salary is rank 1; equal salaries share a rank with no gaps after). Return columns `department` (the department name), `name`, `salary`, and `salary_rank`. Order by `department` ascending, then `salary_rank` ascending, then `name` ascending.",
+      "oracle": "SELECT d.name AS department, e.name, e.salary, DENSE_RANK() OVER (PARTITION BY e.dept_id ORDER BY e.salary DESC) AS salary_rank FROM employees e JOIN departments d ON d.dept_id = e.dept_id ORDER BY department, salary_rank, e.name",
+      "ordered": true,
+      "hints": [
+        "`DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC)`.",
+        "DENSE_RANK gives tied rows the same rank and does NOT skip the next number (unlike RANK)."
+      ],
+      "explanation": "DENSE_RANK partitions restart the counter per department; ties share a rank and the sequence continues without gaps.",
+      "wrongExample": "SELECT d.name AS department, e.name, e.salary, RANK() OVER (PARTITION BY e.dept_id ORDER BY e.salary DESC) AS salary_rank FROM employees e JOIN departments d ON d.dept_id = e.dept_id ORDER BY department, salary_rank, e.name"
+    },
+    {
+      "id": "hr-top-paid-per-dept",
+      "num": 86,
+      "title": "Highest-paid employee per department",
+      "difficulty": "Medium",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "Return exactly one employee — the highest paid — for each department. If salaries tie within a department, pick the one whose `name` comes first alphabetically. Return columns `department` (the department name), `name`, and `salary`, ordered by `department` ascending.",
+      "oracle": "SELECT department, name, salary FROM (SELECT d.name AS department, e.name, e.salary, ROW_NUMBER() OVER (PARTITION BY e.dept_id ORDER BY e.salary DESC, e.name ASC) AS rn FROM employees e JOIN departments d ON d.dept_id = e.dept_id) t WHERE rn = 1 ORDER BY department",
+      "ordered": true,
+      "hints": [
+        "Number rows within each department with `ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC, name ASC)`, then keep `rn = 1`.",
+        "ROW_NUMBER (unlike RANK) breaks ties so exactly one row per department survives."
+      ],
+      "explanation": "ROW_NUMBER with a total ORDER BY inside the partition guarantees a single winner per department even when salaries tie.",
+      "wrongExample": "SELECT department, name, salary FROM (SELECT d.name AS department, e.name, e.salary, ROW_NUMBER() OVER (PARTITION BY e.dept_id ORDER BY e.salary ASC, e.name ASC) AS rn FROM employees e JOIN departments d ON d.dept_id = e.dept_id) t WHERE rn = 1 ORDER BY department"
+    },
+    {
+      "id": "hr-salary-vs-dept-avg",
+      "num": 87,
+      "title": "Salary vs department average",
+      "difficulty": "Medium",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "For each employee, compare their salary to the average salary of their department. Return columns `name`, `salary`, `dept_avg` (department average, rounded to 2 decimals), and `diff` (salary minus department average, rounded to 2 decimals). Order by `name` ascending.",
+      "oracle": "SELECT name, salary, ROUND(AVG(salary) OVER (PARTITION BY dept_id), 2) AS dept_avg, ROUND(salary - AVG(salary) OVER (PARTITION BY dept_id), 2) AS diff FROM employees ORDER BY name",
+      "ordered": true,
+      "hints": [
+        "`AVG(salary) OVER (PARTITION BY dept_id)` gives each row its department average without collapsing rows.",
+        "A window aggregate keeps every employee row, unlike `GROUP BY`."
+      ],
+      "explanation": "A windowed AVG attaches the group average to each individual row, so you can compute per-employee deviations without a self-join or GROUP BY."
+    },
+    {
+      "id": "hr-running-headcount",
+      "num": 88,
+      "title": "Running headcount by hire date",
+      "difficulty": "Medium",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "As employees are hired over time, compute the cumulative company headcount after each hire. Return columns `hire_date`, `name`, and `running_headcount` (the number of employees hired on or before that person, ordered by hire_date). Hire dates are all distinct. Order by `hire_date` ascending.",
+      "oracle": "SELECT hire_date, name, COUNT(*) OVER (ORDER BY hire_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_headcount FROM employees ORDER BY hire_date",
+      "ordered": true,
+      "hints": [
+        "`COUNT(*) OVER (ORDER BY hire_date)` produces a running count.",
+        "An ORDER BY inside the window turns the aggregate into a cumulative (running) total."
+      ],
+      "explanation": "A window function with ORDER BY accumulates over all rows up to the current one, giving a running total as of each hire date."
+    },
+    {
+      "id": "hr-manager-most-reports",
+      "num": 89,
+      "title": "Manager with the most direct reports",
+      "difficulty": "Medium",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "Find the manager who has the most direct reports. Return columns `manager` (the manager's name) and `direct_reports` (count of employees reporting directly to them). Return only the single top manager; if there is a tie, the manager whose `name` comes first alphabetically wins.",
+      "oracle": "SELECT m.name AS manager, COUNT(*) AS direct_reports FROM employees e JOIN employees m ON m.emp_id = e.manager_id GROUP BY m.name ORDER BY direct_reports DESC, manager ASC LIMIT 1",
+      "ordered": false,
+      "hints": [
+        "Self-join employees to their managers, then `GROUP BY manager` and `COUNT(*)`.",
+        "Order by the count descending, add a name tie-breaker, and `LIMIT 1`."
+      ],
+      "explanation": "Counting reports per manager requires grouping by the manager side of a self-join; the tie-breaker guarantees a single deterministic winner."
+    },
+    {
+      "id": "hr-org-level",
+      "num": 90,
+      "title": "Org hierarchy level",
+      "difficulty": "Hard",
+      "category": "Subqueries & CTEs",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "Compute each employee's level in the org hierarchy. The CEO (no manager) is level 1; their direct reports are level 2; and so on. Return columns `name` and `level`, ordered by `level` ascending, then `name` ascending.",
+      "oracle": "WITH RECURSIVE org AS (SELECT emp_id, name, 1 AS level FROM employees WHERE manager_id IS NULL UNION ALL SELECT e.emp_id, e.name, o.level + 1 FROM employees e JOIN org o ON e.manager_id = o.emp_id) SELECT name, level FROM org ORDER BY level, name",
+      "ordered": true,
+      "hints": [
+        "Use `WITH RECURSIVE`: the anchor is the CEO (`manager_id IS NULL`) at level 1.",
+        "The recursive step joins each employee to the already-found row of their manager, adding 1 to the level."
+      ],
+      "explanation": "A recursive CTE walks the org tree top-down: the anchor seeds the root, and each iteration adds employees whose manager was found in the previous iteration."
+    },
+    {
+      "id": "hr-payroll-share",
+      "num": 91,
+      "title": "Share of department payroll",
+      "difficulty": "Hard",
+      "category": "Window Functions",
+      "lists": [
+        "signal"
+      ],
+      "dataset": "hr",
+      "prompt": "For each employee, compute what fraction of their department's total payroll their salary represents. Return columns `department` (the department name), `name`, `salary`, and `payroll_share` — the ratio of the employee's salary to the department's total salary, rounded to 4 decimal places. Order by `department` ascending, then `payroll_share` descending, then `name` ascending.",
+      "oracle": "SELECT d.name AS department, e.name, e.salary, ROUND(e.salary / SUM(e.salary) OVER (PARTITION BY e.dept_id), 4) AS payroll_share FROM employees e JOIN departments d ON d.dept_id = e.dept_id ORDER BY department, payroll_share DESC, e.name",
+      "ordered": true,
+      "hints": [
+        "`SUM(salary) OVER (PARTITION BY dept_id)` gives each row its department's total payroll.",
+        "Divide salary by that windowed total; cast to numeric if needed and `ROUND(..., 4)`."
+      ],
+      "explanation": "A windowed SUM supplies the department total on every row, so each employee's salary can be divided by it to get a within-department share.",
+      "wrongExample": "SELECT d.name AS department, e.name, e.salary, ROUND(e.salary / SUM(e.salary), 4) AS payroll_share FROM employees e JOIN departments d ON d.dept_id = e.dept_id GROUP BY d.name, e.name, e.salary ORDER BY department, payroll_share DESC, e.name"
     }
   ]
 }
