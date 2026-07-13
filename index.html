@@ -215,12 +215,13 @@
   <script src="sqlengine.js?v=2"></script>
 
   <!-- Visualizer Scripts -->
-  <script src="visualizers/dfs.js"></script>
-  <script src="visualizers/bfs.js"></script>
-  <script src="visualizers/binary-search.js"></script>
-  <script src="visualizers/two-pointers.js"></script>
-  <script src="visualizers/sliding-window.js"></script>
-  <script src="visualizers/backtracking.js"></script>
+  <script src="visualizers/dfs.js?v=2"></script>
+  <script src="visualizers/bfs.js?v=2"></script>
+  <script src="visualizers/binary-search.js?v=2"></script>
+  <script src="visualizers/two-pointers.js?v=2"></script>
+  <script src="visualizers/sliding-window.js?v=2"></script>
+  <script src="visualizers/backtracking.js?v=2"></script>
+  <script src="visualizers/course-schedule.js?v=1"></script>
 
   <!-- Settings Modal -->
   <div class="modal-backdrop" id="settings-modal">
@@ -1268,10 +1269,17 @@ const VIZ_TAG_MAP = {
 };
 let activeViz = null;
 
+// Per-problem hand-built visualizers that should win over generic tag/category
+// routing (bridges until the `visualizer` field lands in KV content).
+const VIZ_PROBLEM_MAP = { 207: 'course-schedule' };
+
 function getVizForProblem(p) {
   if (!p) return null;
   // Direct visualizer link on the problem entry
   if (p.visualizer && window.VIZ_REGISTRY && window.VIZ_REGISTRY[p.visualizer]) return p.visualizer;
+  // Hand-built per-problem visualizer
+  const byNum = VIZ_PROBLEM_MAP[p.num];
+  if (byNum && window.VIZ_REGISTRY && window.VIZ_REGISTRY[byNum]) return byNum;
   // Check tags for more specific match
   for (const tag of (p.tags || [])) {
     if (VIZ_TAG_MAP[tag]) return VIZ_TAG_MAP[tag];

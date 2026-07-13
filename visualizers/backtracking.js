@@ -21,9 +21,9 @@ const BacktrackingVisualizer = (() => {
   ];
 
   const C = {
-    bg: '#0f0f0f', panel: '#161616', border: '#2a2a2a',
-    text: '#e0e0e0', muted: '#666',
-    accent: '#e0a458', accentSoft: 'rgba(224,164,88,0.15)',
+    bg: '#0b1017', panel: '#111823', border: '#243040',
+    text: '#dbe3ec', muted: '#7c8b9c',
+    accent: '#5ec6e8', accentSoft: 'rgba(94,198,232,0.13)',
     include: '#22c55e', includeSoft: 'rgba(34,197,94,0.1)',
     exclude: '#ef4444', excludeSoft: 'rgba(239,68,68,0.08)',
     current: '#f59e0b', currentSoft: 'rgba(245,158,11,0.12)',
