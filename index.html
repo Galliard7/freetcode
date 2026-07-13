@@ -1797,7 +1797,10 @@ async function selectSqlProblem(p) {
 }
 
 async function ensurePrepared(p) {
-  if (sqlPrepared === p.id) return true;
+  // Always await a real prepare round-trip before running, rather than trusting
+  // the sqlPrepared flag — a still-in-flight or cold-start prepare from
+  // selectSqlProblem can set the flag optimistically and race the query. These
+  // datasets seed in a few ms, so re-seeding on every Run/Submit is free insurance.
   const r = await sqlEngine.prepare(currentSetup());
   sqlPrepared = r.ok ? p.id : null;
   if (!r.ok) appendOutput('Schema error: ' + r.error, 'out-err');
