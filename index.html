@@ -265,6 +265,7 @@
   <script src="visualizers/sliding-window.js?v=2"></script>
   <script src="visualizers/backtracking.js?v=2"></script>
   <script src="visualizers/course-schedule.js?v=1"></script>
+  <script src="visualizers/koko-bananas.js?v=1"></script>
 
   <!-- Settings Modal -->
   <div class="modal-backdrop" id="settings-modal">
@@ -1314,7 +1315,7 @@ let activeViz = null;
 
 // Per-problem hand-built visualizers that should win over generic tag/category
 // routing (bridges until the `visualizer` field lands in KV content).
-const VIZ_PROBLEM_MAP = { 207: 'course-schedule' };
+const VIZ_PROBLEM_MAP = { 207: 'course-schedule', 875: 'koko-bananas' };
 
 function getVizForProblem(p) {
   if (!p) return null;
