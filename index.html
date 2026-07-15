@@ -1407,36 +1407,54 @@ async function captureVizGif(el, viz, opts) {
     gif.render();
   });
 }
+const VIZ_SHARE_LABEL = '𝕏 Share GIF';
+let __vizShareFile = null;   // a rendered GIF awaiting a native share (needs a fresh user gesture)
 function vizShareText() {
   const p = currentProblem;
   const title = (p && p.num > 0) ? `#${p.num} ${p.title}` : (activeViz ? activeViz.getTitle() : 'this algorithm');
-  return `Come study with me on FreetCode 🧑‍💻\n\n${title} — visualized. Free, no-login coding practice that runs entirely in your browser.`;
+  return `Come study with me on FreetCode 🧑‍💻\n\n${title} — visualized. Free, no-login coding practice that runs entirely in your browser.\n\nhttps://freetcode.com`;
 }
 async function shareVizGif() {
   const btn = document.getElementById('viz-share');
+  // Phase 2 — a GIF is already rendered; this click is a fresh gesture, so the OS
+  // share sheet is allowed. navigator.share WITH files attaches the actual GIF (mobile / capable OS).
+  if (__vizShareFile) {
+    const file = __vizShareFile; __vizShareFile = null; btn.textContent = VIZ_SHARE_LABEL;
+    try { await navigator.share({ files: [file], text: vizShareText() }); } catch (e) { /* cancelled */ }
+    return;
+  }
   if (!activeViz || typeof GIF === 'undefined' || btn.dataset.busy) return;
   btn.dataset.busy = '1';
-  const orig = btn.textContent;
-  const savedStep = activeViz.getStepCount();
   activeViz.stop();
-  // open X compose now — synchronous within the click gesture so it isn't popup-blocked
-  const intent = `https://x.com/intent/post?text=${encodeURIComponent(vizShareText())}&url=${encodeURIComponent('https://freetcode.com')}`;
-  window.open(intent, '_blank', 'noopener');
   try {
     const blob = await captureVizGif(document.getElementById('viz-body'), activeViz, {
       worker: 'vendor/gif.worker.js', bg: '#0b1017', delay: 650,
       onProgress: (f) => { btn.textContent = `⏳ ${Math.round(f * 100)}%`; },
     });
+    const name = `freetcode-${(currentProblem && currentProblem.num) || 'viz'}.gif`;
+    // Always download so the user has the file regardless of platform.
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `freetcode-${(currentProblem && currentProblem.num) || 'viz'}.gif`;
+    a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 8000);
-    btn.textContent = '✓ GIF saved — attach it to your post';
-    setTimeout(() => { btn.textContent = orig; }, 3500);
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    // If the browser can share files (mobile, some desktop), offer a one-tap direct share.
+    const file = new File([blob], name, { type: 'image/gif' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      __vizShareFile = file;
+      btn.textContent = '📤 Tap to post the GIF →';
+      btn.title = 'Share the GIF directly — attaches the file';
+      clearTimeout(btn.__revert);
+      btn.__revert = setTimeout(() => { __vizShareFile = null; btn.textContent = VIZ_SHARE_LABEL; }, 30000);
+    } else {
+      // Desktop web (e.g. Chrome): X compose can't attach media — open it with the
+      // caption and tell the user to drag in the GIF that just downloaded.
+      window.open(`https://x.com/intent/post?text=${encodeURIComponent(vizShareText())}`, '_blank', 'noopener');
+      btn.textContent = '✓ GIF in Downloads — drag it into the post';
+      setTimeout(() => { btn.textContent = VIZ_SHARE_LABEL; }, 6000);
+    }
   } catch (e) {
     btn.textContent = '⚠ Export failed';
-    setTimeout(() => { btn.textContent = orig; }, 3000);
+    setTimeout(() => { btn.textContent = VIZ_SHARE_LABEL; }, 3000);
   } finally {
     delete btn.dataset.busy;
     if (activeViz) activeViz.reset();
