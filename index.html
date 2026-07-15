@@ -55,6 +55,7 @@
       </div>
       <div class="rand-wrap" id="rand-wrap">
         <button class="btn btn-ghost rand-btn" id="rand-btn" title="Random problem — pick topics to test yourself">🎲 <span class="btn-text">Random</span></button>
+        <div class="rand-backdrop" id="rand-backdrop"></div>
         <div class="rand-pop" id="rand-pop" hidden>
           <div class="rand-pop-head">Random problem</div>
           <div class="rand-sec-label">Difficulty</div>
@@ -97,6 +98,16 @@
         .rand-count{font-size:11px;color:var(--fg-muted,#8b949e)}
         .rand-go{margin-left:auto;background:var(--accent,#238636);color:#fff;border:0;border-radius:6px;font:inherit;font-weight:600;font-size:13px;padding:5px 15px;cursor:pointer}
         .rand-go:disabled{opacity:.5;cursor:not-allowed}
+        .rand-backdrop{display:none}
+        /* On phones the button sits far right, so an anchored popover overflows
+           off-screen. Switch to a centered, viewport-bounded sheet with a dimmed
+           backdrop (matching the settings modal). Desktop keeps the anchored popover. */
+        @media (max-width:768px){
+          .rand-btn .btn-text{display:none}
+          .rand-wrap.open .rand-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60}
+          .rand-pop{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,92vw);max-height:82vh;overflow-y:auto;z-index:70}
+          .rand-cats{max-height:none}
+        }
         .mode-switch{display:inline-flex;gap:2px;background:var(--bg-elev,#161b22);border:1px solid var(--border,#30363d);border-radius:8px;padding:2px;margin-left:10px}
         .mode-btn{background:transparent;border:0;color:var(--fg-muted,#8b949e);padding:4px 14px;border-radius:6px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
         .mode-btn.active{background:var(--accent,#238636);color:#fff}
@@ -244,6 +255,7 @@
         <label style="font-size:11px;color:var(--fg-secondary)">Speed</label>
         <input type="range" class="speed-slider" id="viz-speed" min="100" max="2000" value="800" step="100">
         <span class="viz-step-label" id="viz-step-label">0 / 0</span>
+        <button class="btn btn-ghost" id="viz-share" title="Export as GIF & share on X" style="margin-left:auto">𝕏 Share GIF</button>
       </div>
     </div>
   </div>
@@ -266,6 +278,7 @@
   <script src="visualizers/backtracking.js?v=2"></script>
   <script src="visualizers/course-schedule.js?v=1"></script>
   <script src="visualizers/koko-bananas.js?v=1"></script>
+  <script src="vendor/gif.js?v=1"></script>
 
   <!-- Settings Modal -->
   <div class="modal-backdrop" id="settings-modal">
@@ -1361,6 +1374,75 @@ document.getElementById('viz-forward').addEventListener('click', () => { if (act
 document.getElementById('viz-reset').addEventListener('click', () => { if (activeViz) activeViz.reset(); });
 document.getElementById('viz-speed').addEventListener('input', (e) => { if (activeViz) activeViz.setSpeed(2100 - parseInt(e.target.value)); });
 
+// ─── Share visualizer as a GIF (rasterize each step via SVG <foreignObject>) ───
+async function captureVizGif(el, viz, opts) {
+  const rect = el.getBoundingClientRect();
+  const scale = Math.min(1, 900 / rect.width);
+  const W = Math.max(1, Math.round(rect.width * scale)), H = Math.max(1, Math.round(rect.height * scale));
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const draw = () => new Promise((res, rej) => {
+    const clone = el.cloneNode(true); clone.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+    const xml = new XMLSerializer().serializeToString(clone);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${rect.width}" height="${rect.height}"><foreignObject x="0" y="0" width="${rect.width}" height="${rect.height}">${xml}</foreignObject></svg>`;
+    const img = new Image();
+    img.onload = () => { ctx.fillStyle = opts.bg || '#0b1017'; ctx.fillRect(0, 0, W, H); ctx.drawImage(img, 0, 0, W, H); res(); };
+    img.onerror = () => rej(new Error('capture-failed'));
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+  const gif = new GIF({ workers: 2, quality: 10, width: W, height: H, workerScript: opts.worker, background: opts.bg || '#0b1017' });
+  const n = viz.getStepCount();
+  viz.stop(); viz.reset();
+  for (let i = 0; i < n; i++) {
+    if (opts.onProgress) opts.onProgress(i / Math.max(1, n) * 0.55);
+    await draw();
+    gif.addFrame(ctx, { copy: true, delay: opts.delay || 650 });
+    if (i < n - 1) viz.step(1);
+  }
+  await draw(); gif.addFrame(ctx, { copy: true, delay: 1600 });
+  return await new Promise((res) => {
+    gif.on('progress', (p) => { if (opts.onProgress) opts.onProgress(0.55 + p * 0.45); });
+    gif.on('finished', (blob) => res(blob));
+    gif.render();
+  });
+}
+function vizShareText() {
+  const p = currentProblem;
+  const title = (p && p.num > 0) ? `#${p.num} ${p.title}` : (activeViz ? activeViz.getTitle() : 'this algorithm');
+  return `Come study with me on FreetCode 🧑‍💻\n\n${title} — visualized. Free, no-login coding practice that runs entirely in your browser.`;
+}
+async function shareVizGif() {
+  const btn = document.getElementById('viz-share');
+  if (!activeViz || typeof GIF === 'undefined' || btn.dataset.busy) return;
+  btn.dataset.busy = '1';
+  const orig = btn.textContent;
+  const savedStep = activeViz.getStepCount();
+  activeViz.stop();
+  // open X compose now — synchronous within the click gesture so it isn't popup-blocked
+  const intent = `https://x.com/intent/post?text=${encodeURIComponent(vizShareText())}&url=${encodeURIComponent('https://freetcode.com')}`;
+  window.open(intent, '_blank', 'noopener');
+  try {
+    const blob = await captureVizGif(document.getElementById('viz-body'), activeViz, {
+      worker: 'vendor/gif.worker.js', bg: '#0b1017', delay: 650,
+      onProgress: (f) => { btn.textContent = `⏳ ${Math.round(f * 100)}%`; },
+    });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `freetcode-${(currentProblem && currentProblem.num) || 'viz'}.gif`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+    btn.textContent = '✓ GIF saved — attach it to your post';
+    setTimeout(() => { btn.textContent = orig; }, 3500);
+  } catch (e) {
+    btn.textContent = '⚠ Export failed';
+    setTimeout(() => { btn.textContent = orig; }, 3000);
+  } finally {
+    delete btn.dataset.busy;
+    if (activeViz) activeViz.reset();
+  }
+}
+document.getElementById('viz-share').addEventListener('click', shareVizGif);
+
 // ─── Output Helpers ───
 function clearOutput() {
   outputEl.innerHTML = '<div class="output-placeholder">Press ▶ Run or ⌘+Enter to execute your code.</div>';
@@ -2011,6 +2093,7 @@ function drawRandom() {
 }
 
 document.getElementById('rand-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleRandPop(); });
+document.getElementById('rand-backdrop').addEventListener('click', () => toggleRandPop(false));   // tap dimmed area (mobile sheet)
 document.getElementById('rand-go').addEventListener('click', () => { if (drawRandom()) toggleRandPop(false); });
 document.getElementById('rand-diffs').addEventListener('click', (e) => {
   const b = e.target.closest('.rand-pill'); if (!b) return;
