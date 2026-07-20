@@ -53,6 +53,10 @@
         <button class="mode-btn active" data-mode="algo">Algo</button>
         <button class="mode-btn" data-mode="sql">SQL</button>
       </div>
+      <div class="mode-switch dialect-switch" id="dialect-switch" style="display:none" title="Write your queries in this SQL dialect (runs on Postgres under the hood)">
+        <button class="mode-btn" data-dialect="postgres">Postgres</button>
+        <button class="mode-btn" data-dialect="mysql">MySQL</button>
+      </div>
       <div class="rand-wrap" id="rand-wrap">
         <button class="btn btn-ghost rand-btn" id="rand-btn" title="Random problem — pick topics to test yourself">🎲 <span class="btn-text">Random</span></button>
         <div class="rand-backdrop" id="rand-backdrop"></div>
@@ -111,6 +115,9 @@
         .mode-switch{display:inline-flex;gap:2px;background:var(--bg-elev,#161b22);border:1px solid var(--border,#30363d);border-radius:8px;padding:2px;margin-left:10px}
         .mode-btn{background:transparent;border:0;color:var(--fg-muted,#8b949e);padding:4px 14px;border-radius:6px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
         .mode-btn.active{background:var(--accent,#238636);color:#fff}
+        .dialect-switch{margin-left:8px}
+        .dialect-switch .mode-btn.active{background:var(--accent2,#58a6ff);color:#0d1117}
+        .dialect-switch .mode-btn{padding:4px 12px;font-size:12px}
         .sql-schema{margin:0 0 12px;padding:10px 12px;background:var(--bg-elev,#161b22);border:1px solid var(--border,#30363d);border-radius:8px;font-size:12px;line-height:1.6}
         .sql-grid{border-collapse:collapse;margin-top:8px;font-size:13px}
         .sql-grid th,.sql-grid td{border:1px solid var(--border,#30363d);padding:4px 10px;text-align:left}
@@ -267,6 +274,7 @@
 
   <!-- SQL mode: PGlite (Postgres/WASM) engine + result-set judge -->
   <script src="sqljudge.js?v=1"></script>
+  <script src="sqldialect.js?v=1"></script>
   <script src="sqlengine.js?v=2"></script>
 
   <!-- Visualizer Scripts -->
@@ -411,6 +419,9 @@ let sqlDatasets = {};
 let sqlEngine = null;
 let sqlReady = false;
 let sqlPrepared = null;          // problem id whose dataset is currently seeded
+// SQL dialect the learner *writes* in. The executor is always PGlite/Postgres;
+// 'mysql' translates their query via SqlDialect before it runs (sqldialect.js).
+let sqlDialect = localStorage.getItem('freetcode_sql_dialect') || 'postgres';
 let sqlSolvedSet = new Set(JSON.parse(localStorage.getItem('freetcode_sql_solved') || '[]'));
 const SQL_COLLECTIONS = [
   { id: 'all', label: 'Freet SQL' },   // the dedup superset (Freet SQL)
@@ -1908,9 +1919,10 @@ async function setMode(mode) {
   if (editor) { editor.setValue(''); }
   clearOutput();
 
+  document.getElementById('dialect-switch').style.display = (mode === 'sql') ? '' : 'none';
   if (mode === 'sql') {
     await loadSqlProblems();   // ensure the curriculum is present before we render the list
-    if (editor && window.monaco) monaco.editor.setModelLanguage(editor.getModel(), 'sql');
+    if (editor && window.monaco) monaco.editor.setModelLanguage(editor.getModel(), sqlLangFor());
     ensureSqlEngine();
     if (!sqlReady) { runBtn.disabled = true; runBtn.innerHTML = '⏳ Loading…'; showPyBanner('Starting Postgres (SQL engine)…', false); }
     else { runBtn.disabled = false; runBtn.innerHTML = '▶ Run <kbd>⌘↵</kbd>'; hidePyBanner(); }
@@ -1935,11 +1947,11 @@ async function selectSqlProblem(p) {
   const markSolvedBtn = document.getElementById('mark-solved');
   markSolvedBtn.style.display = ''; setMarkSolvedBtn(sqlSolvedSet.has(p.num));
   if (editor) {
-    if (window.monaco) monaco.editor.setModelLanguage(editor.getModel(), 'sql');
-    editor.setValue(p.starter || '-- Write your query here\n');
+    if (window.monaco) monaco.editor.setModelLanguage(editor.getModel(), sqlLangFor());
+    editor.setValue(p.starter || (sqlDialect === 'mysql' ? '-- Write your MySQL query here\n' : '-- Write your query here\n'));
     editor.setScrollPosition({ scrollTop: 0 });
   }
-  descContent.innerHTML = renderSqlSchema(p) + renderDescription(p.prompt || '');
+  descContent.innerHTML = mysqlHint() + renderSqlSchema(p) + renderDescription(p.prompt || '');
   toggleDescription(true);
   const vizBtn = document.getElementById('viz-btn'); if (vizBtn) vizBtn.style.display = 'none';
   problemListEl.querySelectorAll('.problem-item').forEach(el => el.classList.toggle('active', el.dataset.num == p.num));
@@ -1961,15 +1973,49 @@ async function ensurePrepared(p) {
   return r.ok;
 }
 
+// ─── Dialect: learner writes Postgres or MySQL; the engine always runs Postgres.
+function sqlLangFor() { return sqlDialect === 'mysql' ? 'mysql' : 'sql'; }
+function toExecSql(src) {
+  return (sqlDialect === 'mysql' && window.SqlDialect) ? SqlDialect.translate(src) : src;
+}
+// Collapsible showing the Postgres a MySQL query was translated to (debuggable
+// + honest that PGlite is the executor). Empty when nothing was rewritten.
+function dialectNote(src, exec) {
+  if (sqlDialect !== 'mysql' || exec === src) return '';
+  return `<details class="sql-ref" style="margin-top:8px"><summary>Ran as Postgres</summary><pre style="white-space:pre-wrap;padding:8px 0">${escHtml(exec)}</pre></details>`;
+}
+// Honest caveats: where the shallow MySQL→Postgres shim doesn't reach.
+function mysqlHint() {
+  if (sqlDialect !== 'mysql') return '';
+  const gaps = ((window.SqlDialect && SqlDialect.KNOWN_GAPS) || []).map(g => `<li>${escHtml(g)}</li>`).join('');
+  return `<details class="sql-ref" style="margin:6px 0"><summary>MySQL mode — you write MySQL, it runs on Postgres</summary><ul style="margin:6px 0 0;padding-left:18px;color:var(--fg-muted,#8b949e);font-size:12px;line-height:1.5">${gaps}</ul></details>`;
+}
+function refreshSqlDesc() {
+  if (currentMode === 'sql' && currentProblem)
+    descContent.innerHTML = mysqlHint() + renderSqlSchema(currentProblem) + renderDescription(currentProblem.prompt || '');
+}
+function setDialect(d) {
+  if (d !== 'postgres' && d !== 'mysql') return;
+  sqlDialect = d;
+  localStorage.setItem('freetcode_sql_dialect', d);
+  document.querySelectorAll('#dialect-switch .mode-btn').forEach(b => b.classList.toggle('active', b.dataset.dialect === d));
+  if (editor && window.monaco && currentMode === 'sql') {
+    try { monaco.editor.setModelLanguage(editor.getModel(), sqlLangFor()); } catch (_) { /* language not registered */ }
+  }
+  refreshSqlDesc();
+}
+
 async function runSql() {
   if (!sqlReady || !editor || isRunning || !currentProblem) return;
   isRunning = true; setBusy(runBtn, '⏳ Running…'); submitBtn.disabled = true;
   if (outputEl.querySelector('.output-placeholder')) outputEl.innerHTML = '';
   try {
     if (!(await ensurePrepared(currentProblem))) return;
-    const res = await sqlEngine.run(editor.getValue());
-    outputEl.innerHTML = res.error ? renderGrid(res)
-      : `<div class="out-meta">${res.rowCount} row(s) · ${res.ms.toFixed(1)} ms</div>` + renderGrid(res);
+    const src = editor.getValue(), exec = toExecSql(src);
+    const res = await sqlEngine.run(exec);
+    const note = dialectNote(src, exec);
+    outputEl.innerHTML = (res.error ? renderGrid(res)
+      : `<div class="out-meta">${res.rowCount} row(s) · ${res.ms.toFixed(1)} ms</div>` + renderGrid(res)) + note;
   } catch (e) {
     if (e.timeout) { appendOutput('✗ Query stopped after 10s — the SQL engine was reset.', 'out-err'); sqlReady = false; sqlPrepared = null; }
     else appendOutput('✗ ' + (e.message || e), 'out-err');
@@ -1982,7 +2028,8 @@ async function runSql() {
 async function submitSql() {
   if (!sqlReady || !editor || !currentProblem || isRunning) return;
   isRunning = true; setBusy(submitBtn, '⏳ Judging…'); runBtn.disabled = true; outputEl.innerHTML = '';
-  const p = currentProblem, userSql = editor.getValue();
+  const p = currentProblem, userSrc = editor.getValue(), userSql = toExecSql(userSrc);
+  const note = dialectNote(userSrc, userSql);
   const ordered = (p.ordered !== undefined) ? p.ordered : SqlJudge.inferOrdered(p.oracle);
   const opts = { ordered, strictColumns: p.strictColumns };
   const refBlock = `<details class="sql-ref" style="margin-top:10px"><summary>Reference query &amp; explanation</summary><pre style="white-space:pre-wrap;padding:8px 0">${escHtml(p.oracle)}</pre><div>${escHtml(p.explanation || '')}</div></details>`;
@@ -1993,7 +2040,7 @@ async function submitSql() {
     const verdict = SqlJudge.compareResultSets(user, oracle, opts);
     if (!verdict.pass) {
       outputEl.innerHTML = `<div class="verdict-card" style="border-left:3px solid var(--hard,#f85149)"><div class="verdict-head">✗ Not quite</div><div>${escHtml(verdict.reason || '')}</div></div>`
-        + (user.error ? '' : `<div class="out-meta">Your result:</div>` + renderGrid(user)) + refBlock;
+        + (user.error ? '' : `<div class="out-meta">Your result:</div>` + renderGrid(user)) + note + refBlock;
       return;
     }
     // Scaled correctness tier (ADR 0007): re-run on a larger dataset if provided.
@@ -2005,13 +2052,13 @@ async function submitSql() {
         const v2 = SqlJudge.compareResultSets(u2, o2, opts);
         await sqlEngine.prepare(currentSetup()); sqlPrepared = p.id;
         if (!v2.pass) {
-          outputEl.innerHTML = `<div class="verdict-card" style="border-left:3px solid var(--hard,#f85149)"><div class="verdict-head">✗ Correct on the sample, wrong at scale</div><div>Your query matches on the small dataset but diverges on a larger one — a classic join fan-out or missing de-duplication. ${escHtml(v2.reason || '')}</div></div>` + refBlock;
+          outputEl.innerHTML = `<div class="verdict-card" style="border-left:3px solid var(--hard,#f85149)"><div class="verdict-head">✗ Correct on the sample, wrong at scale</div><div>Your query matches on the small dataset but diverges on a larger one — a classic join fan-out or missing de-duplication. ${escHtml(v2.reason || '')}</div></div>` + note + refBlock;
           return;
         }
         scaledNote = '<div class="out-meta">✓ Also correct on a larger dataset.</div>';
       }
     }
-    outputEl.innerHTML = `<div class="verdict-card" style="border-left:3px solid var(--easy,#3fb950)"><div class="verdict-head">✓ Correct</div><div>${escHtml(p.explanation || '')}</div></div>` + scaledNote + refBlock;
+    outputEl.innerHTML = `<div class="verdict-card" style="border-left:3px solid var(--easy,#3fb950)"><div class="verdict-head">✓ Correct</div><div>${escHtml(p.explanation || '')}</div></div>` + scaledNote + note + refBlock;
     markSolved(p.num);
   } catch (e) {
     if (e.timeout) { appendOutput('✗ Judging stopped after timeout — the SQL engine was reset.', 'out-err'); sqlReady = false; sqlPrepared = null; }
@@ -2024,6 +2071,9 @@ async function submitSql() {
 
 document.querySelectorAll('#mode-switch .mode-btn').forEach(b =>
   b.addEventListener('click', () => setMode(b.dataset.mode)));
+document.querySelectorAll('#dialect-switch .mode-btn').forEach(b =>
+  b.addEventListener('click', () => setDialect(b.dataset.dialect)));
+setDialect(sqlDialect);   // reflect the persisted dialect in the toggle on load
 
 // ─── Randomizer: single button + topic popover, current-mode only ───
 // Filters are stored as EXCLUSIONS (per mode) so categories/difficulties added
